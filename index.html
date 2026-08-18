@@ -151,12 +151,12 @@ td.wrap{white-space:normal}
   #printArea,#printArea *{visibility:visible}
   #printArea{display:block;position:absolute;left:0;top:0;width:100%}
   .label-sheet{display:flex;flex-wrap:wrap}
-  /* label 4in กว้าง, 3 ดวง/แถว => ~1.33in ต่อดวง, สูง 1in ; ปรับได้ที่นี่ */
+  /* ขนาดจริงถูก override ตอนพิมพ์ตามช่องที่กรอก (ดู printBarcodes) */
   .label{width:1.33in;height:1in;box-sizing:border-box;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;padding:2px;overflow:hidden;page-break-inside:avoid}
-  .label svg{max-width:100%;height:auto}
-  .label .nm{font-size:7pt;font-weight:700;text-align:center;line-height:1;margin-top:1px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    align-items:center;justify-content:center;padding:1px 2px;overflow:hidden;page-break-inside:avoid}
+  .label svg{width:96%;height:auto;max-height:70%}
+  .label .nm{font-size:8pt;font-weight:700;text-align:center;line-height:1.05;margin-top:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:98%}
   @page{size:4in auto;margin:0}
 }
 .seg{display:inline-flex;border:1px solid #cfd8e6;border-radius:10px;overflow:hidden}
@@ -292,7 +292,14 @@ td.wrap{white-space:normal}
       <section id="page-barcode" class="page">
         <div class="page-head"><h2>พิมพ์บาร์โค้ด</h2></div>
         <div class="card">
-          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · Label 4×1 นิ้ว 3 ดวง/แถว (TSC MB241)</div>
+          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · TSC MB241 · ปรับขนาดให้ตรง label จริงได้ด้านล่าง</div>
+          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:12px">
+            <div><label class="f">กว้าง/ดวง (นิ้ว)</label><input id="bcW" class="inp" type="number" step="0.05" value="1.5"></div>
+            <div><label class="f">สูง (นิ้ว)</label><input id="bcH" class="inp" type="number" step="0.05" value="1"></div>
+            <div><label class="f">gap (mm)</label><input id="bcGap" class="inp" type="number" step="0.5" value="3"></div>
+            <div><label class="f">ดวง/แถว</label><input id="bcCols" class="inp" type="number" value="3"></div>
+            <div><label class="f">สูงบาร์โค้ด (px)</label><input id="bcBarH" class="inp" type="number" value="42"></div>
+          </div>
           <div class="row" style="margin-bottom:10px">
             <input id="bcSearch" class="inp" style="flex:1;min-width:160px" placeholder="ค้นหาเพื่อกรอง" oninput="renderBcList()">
             <button class="btn ghost sm" onclick="bcSelectAll(true)">เลือกทั้งหมด</button>
@@ -808,7 +815,20 @@ function updateBcCount(){ document.getElementById('bcCount').textContent=Object.
 function printBarcodes(){
   const sel=ASSETS.filter(a=>bcSelected[a.wfdcId]);
   if(!sel.length){toast('เลือกอย่างน้อย 1 รายการ','err');return;}
-  const sheet=document.getElementById('labelSheet'); sheet.innerHTML='';
+  const W=parseFloat(val('bcW'))||1.5, H=parseFloat(val('bcH'))||1,
+        gapMm=parseFloat(val('bcGap'))||0, cols=parseInt(val('bcCols'))||3,
+        bh=parseInt(val('bcBarH'))||42;
+  const gapIn=gapMm/25.4;
+  const pageW=(W*cols + gapIn*(cols>1?cols-1:0)).toFixed(3);
+  // inject print sizing (override ตามที่กรอก)
+  let ps=document.getElementById('printStyle'); if(ps)ps.remove();
+  ps=document.createElement('style'); ps.id='printStyle';
+  ps.textContent='@media print{@page{size:'+pageW+'in auto;margin:0}'+
+    '.label{width:'+W+'in;height:'+H+'in;margin-right:'+gapIn.toFixed(3)+'in}'+
+    '.label:nth-child('+cols+'n){margin-right:0}}';
+  document.head.appendChild(ps);
+  const sheet=document.getElementById('labelSheet');
+  sheet.innerHTML=''; sheet.style.width=pageW+'in';
   sel.forEach(a=>{
     const div=document.createElement('div'); div.className='label';
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -816,9 +836,10 @@ function printBarcodes(){
     const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.name||a.wfdcId;
     div.appendChild(nm);
     sheet.appendChild(div);
-    JsBarcode(svg, a.wfdcId, { format:'CODE128', width:1.4, height:34, fontSize:10, margin:0, displayValue:true });
+    JsBarcode(svg, a.wfdcId, { format:'CODE128', width:1.6, height:bh, fontSize:11,
+      margin:0, textMargin:1, displayValue:true });
   });
-  setTimeout(()=>window.print(),300);
+  setTimeout(()=>window.print(),350);
 }
 
 /* ============ EXPORT ============ */
