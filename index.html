@@ -424,7 +424,8 @@ const MAX_PHOTOS = 4;
 
 /* ---------- api ---------- */
 async function api(action, payload={}) {
-  const body = JSON.stringify(Object.assign({ action, empId: USER ? USER.empId : (payload.empId||'') }, payload));
+  const authEmp = USER ? USER.empId : (payload.empId || '');
+  const body = JSON.stringify(Object.assign({ action }, payload, { empId: authEmp }));
   const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || 'error');
@@ -914,8 +915,8 @@ function userModal(u){
     <label class="f" style="margin-top:8px">Role</label><select id="cRole" class="inp">${roles}</select>
     ${u?`<label class="f" style="margin-top:8px">สถานะ</label><select id="cActive" class="inp"><option value="true" ${u.Active?'selected':''}>ใช้งาน</option><option value="false" ${!u.Active?'selected':''}>ปิดใช้งาน</option></select>`:''}`;
   document.getElementById('cfgSave').onclick=async()=>{
-    const payload={ empId:val('cEmp'), name:val('cName'), department:val('cDep'), position:val('cPos'), role:val('cRole') };
-    if(!payload.empId){toast('กรอกเลขพนักงาน','err');return;}
+    const payload={ uEmp:val('cEmp'), name:val('cName'), department:val('cDep'), position:val('cPos'), role:val('cRole') };
+    if(!payload.uEmp){toast('กรอกเลขพนักงาน','err');return;}
     try{
       if(u){ payload.active=document.getElementById('cActive').value==='true'; await api('updateUser',payload); }
       else await api('addUser',payload);
