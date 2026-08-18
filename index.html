@@ -297,6 +297,7 @@ td.wrap{white-space:normal}
             <div><label class="f">กว้าง/ดวง (นิ้ว)</label><input id="bcW" class="inp" type="number" step="0.05" value="1.5"></div>
             <div><label class="f">สูง (นิ้ว)</label><input id="bcH" class="inp" type="number" step="0.05" value="1"></div>
             <div><label class="f">gap (mm)</label><input id="bcGap" class="inp" type="number" step="0.5" value="3"></div>
+            <div><label class="f">ขอบซ้าย (mm)</label><input id="bcLeft" class="inp" type="number" step="0.5" value="2"></div>
             <div><label class="f">ดวง/แถว</label><input id="bcCols" class="inp" type="number" value="3"></div>
             <div><label class="f">สูงบาร์โค้ด (px)</label><input id="bcBarH" class="inp" type="number" value="42"></div>
           </div>
@@ -816,19 +817,20 @@ function printBarcodes(){
   const sel=ASSETS.filter(a=>bcSelected[a.wfdcId]);
   if(!sel.length){toast('เลือกอย่างน้อย 1 รายการ','err');return;}
   const W=parseFloat(val('bcW'))||1.5, H=parseFloat(val('bcH'))||1,
-        gapMm=parseFloat(val('bcGap'))||0, cols=parseInt(val('bcCols'))||3,
-        bh=parseInt(val('bcBarH'))||42;
-  const gapIn=gapMm/25.4;
-  const pageW=(W*cols + gapIn*(cols>1?cols-1:0)).toFixed(3);
+        gapMm=parseFloat(val('bcGap'))||0, leftMm=parseFloat(val('bcLeft'))||0,
+        cols=parseInt(val('bcCols'))||3, bh=parseInt(val('bcBarH'))||42;
+  const gapIn=gapMm/25.4, leftIn=leftMm/25.4;
+  const pageW=(leftIn + W*cols + gapIn*(cols>1?cols-1:0)).toFixed(3);
   // inject print sizing (override ตามที่กรอก)
   let ps=document.getElementById('printStyle'); if(ps)ps.remove();
   ps=document.createElement('style'); ps.id='printStyle';
   ps.textContent='@media print{@page{size:'+pageW+'in auto;margin:0}'+
+    '.label-sheet{padding-left:'+leftIn.toFixed(3)+'in}'+
     '.label{width:'+W+'in;height:'+H+'in;margin-right:'+gapIn.toFixed(3)+'in}'+
     '.label:nth-child('+cols+'n){margin-right:0}}';
   document.head.appendChild(ps);
   const sheet=document.getElementById('labelSheet');
-  sheet.innerHTML=''; sheet.style.width=pageW+'in';
+  sheet.innerHTML=''; sheet.style.width=pageW+'in'; sheet.style.paddingLeft=leftIn+'in';
   sel.forEach(a=>{
     const div=document.createElement('div'); div.className='label';
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
