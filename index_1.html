@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Asset Checker — WFDC</title>
+
+<!-- CDN libs -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root{
+  --navy:#0d2a52; --navy2:#163a6b; --red:#e2231a; --bg:#f4f6fa; --card:#fff;
+  --line:#e3e8f0; --muted:#6b7a90; --ok:#1a9d5a; --warn:#e0a100; --danger:#e2231a;
+  --shadow:0 2px 10px rgba(16,38,73,.08);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"Segoe UI","Sarabun",system-ui,sans-serif;background:var(--bg);color:#1c2b3f}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:15px}
+
+/* ---------- Login ---------- */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));z-index:100;padding:20px}
+.login-card{background:#fff;border-radius:16px;padding:34px 28px;width:100%;max-width:380px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.login-card h1{margin:0 0 4px;font-size:22px;color:var(--navy)}
+.login-card .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+.brand-badge{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;
+  padding:6px 12px;border-radius:8px;font-weight:700;font-size:13px;margin-bottom:16px}
+.brand-badge b{color:var(--red)}
+
+/* ---------- Shell ---------- */
+#app{display:none;min-height:100vh}
+header.top{position:sticky;top:0;z-index:40;background:var(--navy);color:#fff;
+  display:flex;align-items:center;gap:12px;padding:10px 14px;box-shadow:var(--shadow)}
+header.top .ham{background:none;border:none;color:#fff;font-size:22px;padding:4px 8px;display:none}
+header.top .title{font-weight:700;font-size:16px}
+header.top .title b{color:#ff6b63}
+header.top .spacer{flex:1}
+header.top .who{font-size:12px;text-align:right;line-height:1.3}
+header.top .who small{color:#b9c6dc}
+header.top .logout{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px}
+
+.layout{display:flex}
+nav.side{width:210px;background:#fff;min-height:calc(100vh - 52px);border-right:1px solid var(--line);
+  padding:12px 8px;position:sticky;top:52px;height:calc(100vh - 52px);overflow:auto}
+nav.side a{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:#33465f;
+  text-decoration:none;font-size:14px;font-weight:600;margin-bottom:2px}
+nav.side a .ic{width:20px;text-align:center}
+nav.side a.active{background:var(--navy);color:#fff}
+nav.side a.admin-only{display:none}
+nav.side.show-admin a.admin-only{display:flex}
+main{flex:1;padding:18px;max-width:1100px;margin:0 auto;width:100%}
+@media(max-width:820px){
+  header.top .ham{display:block}
+  nav.side{position:fixed;left:0;top:52px;transform:translateX(-100%);transition:.25s;z-index:45;box-shadow:6px 0 20px rgba(0,0,0,.15)}
+  nav.side.open{transform:translateX(0)}
+  .backdrop{display:none;position:fixed;inset:52px 0 0 0;background:rgba(0,0,0,.35);z-index:44}
+  .backdrop.open{display:block}
+  main{padding:14px}
+}
+
+/* ---------- Common UI ---------- */
+.page{display:none}
+.page.active{display:block}
+.page-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.page-head h2{margin:0;font-size:20px;color:var(--navy)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.grid{display:grid;gap:12px}
+label.f{display:block;font-size:13px;font-weight:600;color:#41546e;margin:0 0 5px}
+.req:after{content:" *";color:var(--red)}
+.inp{width:100%;padding:11px 12px;border:1px solid #cfd8e6;border-radius:10px;background:#fff;outline:none}
+.inp:focus{border-color:var(--navy)}
+textarea.inp{min-height:70px;resize:vertical}
+.btn{border:none;border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px}
+.btn.primary{background:var(--navy);color:#fff}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:#eef2f8;color:#33465f}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.chip.ok{background:#e4f6ec;color:var(--ok)} .chip.warn{background:#fef3d6;color:#a67c00}
+.chip.danger{background:#fde4e2;color:var(--danger)} .chip.move{background:#e3edfb;color:#2b5fb0}
+.muted{color:var(--muted);font-size:13px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1c2b3f;color:#fff;
+  padding:12px 18px;border-radius:10px;font-size:14px;z-index:200;box-shadow:0 6px 24px rgba(0,0,0,.3);opacity:0;transition:.25s;pointer-events:none;max-width:90%}
+.toast.show{opacity:1}
+.toast.ok{background:#137a44}.toast.err{background:#b21b13}
+
+/* table */
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;min-width:640px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:#f0f4fa;color:#41546e;font-weight:700;position:sticky;top:0}
+tr:hover td{background:#f8fafd}
+td.wrap{white-space:normal}
+
+/* photos */
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:560px){.photo-grid{grid-template-columns:repeat(2,1fr)}}
+.photo-slot{position:relative;aspect-ratio:1;border:2px dashed #c3cfe0;border-radius:12px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;background:#f7fafe;cursor:pointer}
+.photo-slot img{width:100%;height:100%;object-fit:cover}
+.photo-slot .ph-ic{color:#9fb0c8;font-size:26px;text-align:center;line-height:1.2}
+.photo-slot .rm{position:absolute;top:5px;right:5px;background:rgba(226,35,26,.92);color:#fff;border:none;
+  width:24px;height:24px;border-radius:50%;font-size:14px;display:none}
+.photo-slot.filled .rm{display:block}
+.photo-slot input{display:none}
+
+/* stat cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.stat .n{font-size:28px;font-weight:800;color:var(--navy)}
+.stat .l{font-size:13px;color:var(--muted);margin-top:2px}
+.stat.accent{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.stat.accent .n,.stat.accent .l{color:#fff}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.charts{grid-template-columns:1fr}}
+.chart-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.chart-card h3{margin:0 0 12px;font-size:15px;color:var(--navy)}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(12,26,45,.55);z-index:80;align-items:flex-start;justify-content:center;padding:20px;overflow:auto}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.35);margin:auto}
+.modal-h{display:flex;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.modal-h h3{margin:0;font-size:17px;color:var(--navy);flex:1}
+.modal-h .x{background:none;border:none;font-size:22px;color:#8494a8}
+.modal-b{padding:18px}
+.modal-f{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+
+/* scanner */
+#reader{width:100%;border-radius:12px;overflow:hidden}
+.scan-log{max-height:230px;overflow:auto;margin-top:12px}
+.scan-item{display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13.5px}
+.scan-item .dot{width:9px;height:9px;border-radius:50%}
+.dot.g{background:var(--ok)}.dot.r{background:var(--danger)}.dot.y{background:var(--warn)}
+
+/* barcode print */
+.bc-list{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.bc-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+#printArea{display:none}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{display:block;position:absolute;left:0;top:0;width:100%}
+  .label-sheet{display:flex;flex-wrap:wrap}
+  /* label 4in กว้าง, 3 ดวง/แถว => ~1.33in ต่อดวง, สูง 1in ; ปรับได้ที่นี่ */
+  .label{width:1.33in;height:1in;box-sizing:border-box;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:2px;overflow:hidden;page-break-inside:avoid}
+  .label svg{max-width:100%;height:auto}
+  .label .nm{font-size:7pt;font-weight:700;text-align:center;line-height:1;margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  @page{size:4in auto;margin:0}
+}
+.seg{display:inline-flex;border:1px solid #cfd8e6;border-radius:10px;overflow:hidden}
+.seg button{background:#fff;border:none;padding:8px 14px;font-size:13px;font-weight:600;color:#41546e}
+.seg button.on{background:var(--navy);color:#fff}
+.spin{width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login">
+  <div class="login-card">
+    <div class="brand-badge">CJ&nbsp;<b>LOGISTICS</b></div>
+    <h1>Asset Checker</h1>
+    <div class="sub">ระบบทะเบียนทรัพย์สิน WFDC · เข้าสู่ระบบด้วยเลขพนักงาน</div>
+    <label class="f">เลขพนักงาน (Employee ID)</label>
+    <input id="empId" class="inp" placeholder="เช่น TH061378" autocomplete="off">
+    <button id="loginBtn" class="btn primary" style="width:100%;margin-top:16px">เข้าสู่ระบบ</button>
+    <div id="loginMsg" class="muted" style="margin-top:12px;color:var(--red)"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header class="top">
+    <button class="ham" onclick="toggleNav()">☰</button>
+    <div class="title">Asset&nbsp;Checker <b>·</b> WFDC</div>
+    <div class="spacer"></div>
+    <div class="who">
+      <div id="whoName">—</div><small id="whoRole"></small>
+    </div>
+    <button class="logout" onclick="logout()">ออก</button>
+  </header>
+
+  <div class="layout">
+    <div class="backdrop" id="backdrop" onclick="toggleNav()"></div>
+    <nav class="side" id="side">
+      <a data-page="dashboard" class="active" onclick="go('dashboard')"><span class="ic">📊</span> แดชบอร์ด</a>
+      <a data-page="assets" onclick="go('assets')"><span class="ic">📦</span> ทะเบียนทรัพย์สิน</a>
+      <a data-page="count" onclick="go('count')"><span class="ic">🔍</span> นับสต็อก</a>
+      <a data-page="barcode" onclick="go('barcode')"><span class="ic">🏷️</span> พิมพ์บาร์โค้ด</a>
+      <a data-page="export" onclick="go('export')"><span class="ic">📤</span> Export</a>
+      <a data-page="settings" class="admin-only" onclick="go('settings')"><span class="ic">⚙️</span> ตั้งค่า</a>
+    </nav>
+
+    <main>
+      <!-- ===== DASHBOARD ===== -->
+      <section id="page-dashboard" class="page active">
+        <div class="page-head"><h2>แดชบอร์ด</h2><div class="spacer" style="flex:1"></div>
+          <button class="btn ghost sm" onclick="loadDashboard()">↻ รีเฟรช</button></div>
+        <div id="dashStats" class="stats"></div>
+        <div class="charts">
+          <div class="chart-card"><h3>แยกตามหมวดหมู่</h3><canvas id="chCat"></canvas></div>
+          <div class="chart-card"><h3>แยกตามสถานะ</h3><canvas id="chStatus"></canvas></div>
+          <div class="chart-card"><h3>แยกตามโซน</h3><canvas id="chZone"></canvas></div>
+          <div class="chart-card"><h3>แหล่งที่มา (Makro vs จัดซื้อเอง)</h3><canvas id="chSource"></canvas></div>
+        </div>
+        <div class="card" id="dashCount"></div>
+      </section>
+
+      <!-- ===== ASSETS ===== -->
+      <section id="page-assets" class="page">
+        <div class="page-head"><h2>ทะเบียนทรัพย์สิน</h2><div class="spacer" style="flex:1"></div>
+          <button class="btn red" onclick="openAsset()">+ เพิ่มทรัพย์สิน</button></div>
+        <div class="card">
+          <div class="row">
+            <input id="aSearch" class="inp" style="flex:1;min-width:160px" placeholder="ค้นหา WFDC ID / Makro / ชื่อ" oninput="debouncedAssets()">
+            <select id="aCat" class="inp" style="width:auto" onchange="loadAssets()"></select>
+            <select id="aZone" class="inp" style="width:auto" onchange="loadAssets()"></select>
+            <select id="aStatus" class="inp" style="width:auto" onchange="loadAssets()"></select>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table id="assetTbl"><thead><tr>
+          <th>WFDC ID</th><th>Makro</th><th>ชื่อ</th><th>หมวด</th><th>โซน</th><th>สถานะ</th><th>รูป</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
+        <div id="assetEmpty" class="empty" style="display:none">ยังไม่มีข้อมูล</div>
+      </section>
+
+      <!-- ===== COUNT ===== -->
+      <section id="page-count" class="page">
+        <div class="page-head"><h2>นับสต็อก (Physical Count)</h2></div>
+        <div id="countHome">
+          <div class="card">
+            <div class="row">
+              <button class="btn primary" onclick="newSession()">+ เริ่มรอบนับใหม่</button>
+              <button class="btn ghost sm" onclick="loadSessions()">↻ รีเฟรช</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table id="sessTbl"><thead><tr>
+            <th>Session</th><th>วันที่</th><th>ผู้สร้าง</th><th>รอบ</th><th>สถานะ</th><th></th>
+          </tr></thead><tbody></tbody></table></div>
+        </div>
+
+        <div id="countActive" style="display:none">
+          <div class="card">
+            <div class="row" style="justify-content:space-between">
+              <div><b id="csTitle"></b><div class="muted" id="csSub"></div></div>
+              <button class="btn ghost sm" onclick="backToSessions()">← กลับ</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row" style="justify-content:space-between;margin-bottom:10px">
+              <b>สแกนบาร์โค้ด</b>
+              <button id="scanToggle" class="btn primary sm" onclick="toggleScan()">▶ เปิดกล้อง</button>
+            </div>
+            <div id="reader"></div>
+            <div class="row" style="margin-top:10px">
+              <input id="manualScan" class="inp" style="flex:1" placeholder="หรือพิมพ์ WFDC ID แล้ว Enter" onkeydown="if(event.key==='Enter')manualScanGo()">
+              <button class="btn ghost sm" onclick="manualScanGo()">เพิ่ม</button>
+            </div>
+            <div class="scan-log" id="scanLog"></div>
+          </div>
+          <div class="card">
+            <div class="row" style="gap:16px;flex-wrap:wrap">
+              <div><b id="csFound">0</b> <span class="muted">พบ</span></div>
+              <div><b id="csMissing">0</b> <span class="muted">ขาด</span></div>
+              <div><b id="csExtra">0</b> <span class="muted">เกิน</span></div>
+              <div><b id="csTotal">0</b> <span class="muted">ทั้งหมด</span></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="btn ghost sm" onclick="showResult()">ดูผลสรุป</button>
+              <button class="btn ghost sm" onclick="doRecheck()">รอบ Recheck</button>
+              <button class="btn red sm" onclick="doClose()">ปิดรอบนับ</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== BARCODE ===== -->
+      <section id="page-barcode" class="page">
+        <div class="page-head"><h2>พิมพ์บาร์โค้ด</h2></div>
+        <div class="card">
+          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · Label 4×1 นิ้ว 3 ดวง/แถว (TSC MB241)</div>
+          <div class="row" style="margin-bottom:10px">
+            <input id="bcSearch" class="inp" style="flex:1;min-width:160px" placeholder="ค้นหาเพื่อกรอง" oninput="renderBcList()">
+            <button class="btn ghost sm" onclick="bcSelectAll(true)">เลือกทั้งหมด</button>
+            <button class="btn ghost sm" onclick="bcSelectAll(false)">ล้าง</button>
+          </div>
+          <div class="bc-list" id="bcList"></div>
+          <div class="row" style="margin-top:12px">
+            <span class="muted">เลือกแล้ว <b id="bcCount">0</b> รายการ</span>
+            <div class="spacer" style="flex:1"></div>
+            <button class="btn red" onclick="printBarcodes()">🖨️ พิมพ์</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== EXPORT ===== -->
+      <section id="page-export" class="page">
+        <div class="page-head"><h2>Export ข้อมูล</h2></div>
+        <div class="card">
+          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+            <div><label class="f">หมวดหมู่</label><select id="exCat" class="inp"></select></div>
+            <div><label class="f">โซน</label><select id="exZone" class="inp"></select></div>
+            <div><label class="f">สถานะ</label><select id="exStatus" class="inp"></select></div>
+            <div><label class="f">แหล่งที่มา</label><select id="exSource" class="inp">
+              <option value="">ทั้งหมด</option><option value="makro">จาก Makro</option><option value="own">จัดซื้อเอง</option>
+            </select></div>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn primary" onclick="exportExcel()">📊 Excel (ลิงก์รูป)</button>
+            <button class="btn red" onclick="exportPDF()">📄 PDF (ฝังรูปยืนยัน)</button>
+            <span id="exMsg" class="muted"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section id="page-settings" class="page">
+        <div class="page-head"><h2>ตั้งค่า</h2></div>
+        <div class="card">
+          <div class="seg" id="setTabs">
+            <button class="on" onclick="setTab('users',this)">พนักงาน</button>
+            <button onclick="setTab('role',this)">Role</button>
+            <button onclick="setTab('category',this)">หมวดหมู่</button>
+            <button onclick="setTab('zone',this)">โซน</button>
+            <button onclick="setTab('status',this)">สถานะ</button>
+            <button onclick="setTab('reason',this)">เหตุผล</button>
+          </div>
+        </div>
+        <div id="setBody"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ===== ASSET MODAL ===== -->
+<div class="modal-bg" id="assetModal">
+  <div class="modal">
+    <div class="modal-h"><h3 id="amTitle">เพิ่มทรัพย์สิน</h3><button class="x" onclick="closeAsset()">×</button></div>
+    <div class="modal-b">
+      <input type="hidden" id="mAssetId">
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div><label class="f req">เลข WFDC</label><input id="mWfdc" class="inp"></div>
+        <div><label class="f">เลข Makro</label><input id="mMakro" class="inp" placeholder="ถ้ามี"></div>
+      </div>
+      <div style="margin-top:10px"><label class="f req">ชื่อทรัพย์สิน</label><input id="mName" class="inp"></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px">
+        <div><label class="f">หมวดหมู่</label><select id="mCat" class="inp"></select></div>
+        <div><label class="f">โซน</label><select id="mZone" class="inp"></select></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px">
+        <div><label class="f">ผู้รับผิดชอบ</label><input id="mOwner" class="inp"></div>
+        <div><label class="f">สถานะ</label><select id="mStatus" class="inp" onchange="onStatusChange()"></select></div>
+      </div>
+      <div id="reasonBox" style="display:none;margin-top:10px">
+        <label class="f req">เหตุผลการเปลี่ยนสถานะ</label>
+        <select id="mReason" class="inp"></select>
+        <input id="mDetail" class="inp" style="margin-top:8px" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)">
+      </div>
+      <div style="margin-top:10px"><label class="f">หมายเหตุ</label><textarea id="mNote" class="inp"></textarea></div>
+      <div style="margin-top:14px"><label class="f">รูปถ่าย (สูงสุด 4 รูป)</label>
+        <div class="photo-grid" id="photoGrid"></div>
+      </div>
+      <div id="logBox" style="margin-top:14px;display:none">
+        <label class="f">ประวัติการเปลี่ยนแปลง</label>
+        <div class="tbl-wrap" style="max-height:180px"><table><thead><tr>
+          <th>เวลา</th><th>ผู้ทำ</th><th>การกระทำ</th><th>สถานะ</th><th>เหตุผล</th></tr></thead>
+          <tbody id="logBody"></tbody></table></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeAsset()">ยกเลิก</button>
+      <button class="btn primary" id="amSave" onclick="saveAsset()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT MODAL ===== -->
+<div class="modal-bg" id="resultModal">
+  <div class="modal">
+    <div class="modal-h"><h3>ผลการนับสต็อก</h3><button class="x" onclick="close_('resultModal')">×</button></div>
+    <div class="modal-b" id="resultBody"></div>
+    <div class="modal-f"><button class="btn ghost" onclick="close_('resultModal')">ปิด</button></div>
+  </div>
+</div>
+
+<!-- ===== GENERIC CONFIG MODAL ===== -->
+<div class="modal-bg" id="cfgModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-h"><h3 id="cfgTitle">เพิ่มรายการ</h3><button class="x" onclick="close_('cfgModal')">×</button></div>
+    <div class="modal-b" id="cfgBody"></div>
+    <div class="modal-f"><button class="btn ghost" onclick="close_('cfgModal')">ยกเลิก</button>
+      <button class="btn primary" id="cfgSave">บันทึก</button></div>
+  </div>
+</div>
+
+<div id="printArea"><div class="label-sheet" id="labelSheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG — วาง URL Web App ที่ deploy จาก Apps Script ตรงนี้
+   ============================================================ */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyI-nIl2rOX2X7V4Sv_PlXBz6QceLfkWYWYA3f6Y3W-uS6huE6OzO1QtxNkbeWbvnw6/exec';
+
+/* ---------- state ---------- */
+let USER = null, CONFIG = { category:[], zone:[], status:[], reason:[], role:[], setting:{} };
+let ASSETS = [], SESSION = null, scanner = null, scanning = false;
+let photoState = ['','','',''];   // urls
+const MAX_PHOTOS = 4;
+
+/* ---------- api ---------- */
+async function api(action, payload={}) {
+  const body = JSON.stringify(Object.assign({ action, empId: USER ? USER.empId : (payload.empId||'') }, payload));
+  const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'error');
+  return data;
+}
+function toast(msg, kind='') { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+kind; setTimeout(()=>t.className='toast',2600); }
+
+/* ---------- login ---------- */
+document.getElementById('loginBtn').onclick = doLogin;
+document.getElementById('empId').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+async function doLogin(){
+  const empId = document.getElementById('empId').value.trim();
+  if(!empId){document.getElementById('loginMsg').textContent='กรุณากรอกเลขพนักงาน';return;}
+  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> กำลังเข้า...';
+  try{
+    const d = await api('login',{empId});
+    USER=d.user; CONFIG=d.config||CONFIG;
+    localStorage.setItem('ac_emp', empId);
+    startApp();
+  }catch(e){ document.getElementById('loginMsg').textContent=e.message; }
+  btn.disabled=false; btn.textContent='เข้าสู่ระบบ';
+}
+function logout(){ localStorage.removeItem('ac_emp'); location.reload(); }
+
+function startApp(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('whoName').textContent = USER.name + ' ('+USER.empId+')';
+  document.getElementById('whoRole').textContent = (USER.department||'')+' · '+USER.role;
+  if(USER.role==='admin') document.getElementById('side').classList.add('show-admin');
+  fillConfigDropdowns();
+  loadDashboard();
+}
+/* auto-login */
+window.addEventListener('load', async ()=>{
+  const saved = localStorage.getItem('ac_emp');
+  if(saved && API_URL.indexOf('PASTE')<0){
+    try{ const d=await api('login',{empId:saved}); USER=d.user; CONFIG=d.config||CONFIG; startApp(); }catch(e){}
+  }
+});
+
+/* ---------- nav ---------- */
+function toggleNav(){ document.getElementById('side').classList.toggle('open'); document.getElementById('backdrop').classList.toggle('open'); }
+function go(page){
+  document.querySelectorAll('nav.side a').forEach(a=>a.classList.toggle('active',a.dataset.page===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('side').classList.remove('open'); document.getElementById('backdrop').classList.remove('open');
+  if(page==='dashboard')loadDashboard();
+  if(page==='assets')loadAssets();
+  if(page==='count')loadSessions();
+  if(page==='barcode')loadBarcodePage();
+  if(page==='export')fillExportDropdowns();
+  if(page==='settings')setTab('users',document.querySelector('#setTabs button'));
+}
+
+/* ---------- dropdown fillers ---------- */
+function opts(list, withAll, allLabel){
+  let h = withAll ? `<option value="">${allLabel||'ทั้งหมด'}</option>` : '';
+  list.forEach(c=>h+=`<option value="${esc(c.value)}">${esc(c.value)}</option>`);
+  return h;
+}
+function fillConfigDropdowns(){
+  document.getElementById('aCat').innerHTML=opts(CONFIG.category,true,'ทุกหมวด');
+  document.getElementById('aZone').innerHTML=opts(CONFIG.zone,true,'ทุกโซน');
+  document.getElementById('aStatus').innerHTML=opts(CONFIG.status,true,'ทุกสถานะ');
+  document.getElementById('mCat').innerHTML=opts(CONFIG.category,false);
+  document.getElementById('mZone').innerHTML=opts(CONFIG.zone,false);
+  document.getElementById('mStatus').innerHTML=opts(CONFIG.status,false);
+  document.getElementById('mReason').innerHTML=opts(CONFIG.reason,false);
+}
+function fillExportDropdowns(){
+  document.getElementById('exCat').innerHTML=opts(CONFIG.category,true,'ทุกหมวด');
+  document.getElementById('exZone').innerHTML=opts(CONFIG.zone,true,'ทุกโซน');
+  document.getElementById('exStatus').innerHTML=opts(CONFIG.status,true,'ทุกสถานะ');
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function statusChip(s){
+  const m={'ใช้งานปกติ':'ok','ย้ายที่':'move','ชำรุด':'warn','จำหน่ายแล้ว':'danger'};
+  return `<span class="chip ${m[s]||'ok'}">${esc(s)}</span>`;
+}
+
+/* ============ DASHBOARD ============ */
+let charts={};
+async function loadDashboard(){
+  try{
+    const d=(await api('dashboard')).data;
+    const st=document.getElementById('dashStats');
+    const mk=d.makroVsOwn;
+    st.innerHTML=`
+      <div class="stat accent"><div class="n">${d.total}</div><div class="l">ทรัพย์สินทั้งหมด</div></div>
+      <div class="stat"><div class="n">${d.byStatus['ใช้งานปกติ']||0}</div><div class="l">ใช้งานปกติ</div></div>
+      <div class="stat"><div class="n">${d.byStatus['ชำรุด']||0}</div><div class="l">ชำรุด</div></div>
+      <div class="stat"><div class="n">${mk.makro}</div><div class="l">รับจาก Makro</div></div>`;
+    drawDonut('chCat', d.byCategory);
+    drawBar('chStatus', d.byStatus, ['#1a9d5a','#2b5fb0','#e0a100','#e2231a','#8494a8']);
+    drawBar('chZone', d.byZone, ['#0d2a52']);
+    drawDonut('chSource', {'รับจาก Makro':mk.makro,'จัดซื้อเอง':mk.own});
+    const lc=d.latestCount, box=document.getElementById('dashCount');
+    if(lc){ box.innerHTML=`<h3 style="margin:0 0 10px;color:var(--navy)">ผลนับสต็อกล่าสุด · รอบ ${lc.round} · ${esc(lc.status)}</h3>
+      <div class="stats" style="margin:0">
+        <div class="stat"><div class="n" style="color:var(--ok)">${lc.found}</div><div class="l">พบ</div></div>
+        <div class="stat"><div class="n" style="color:var(--danger)">${lc.missing}</div><div class="l">ขาด</div></div>
+        <div class="stat"><div class="n" style="color:var(--warn)">${lc.extra}</div><div class="l">เกิน</div></div>
+        <div class="stat"><div class="n">${lc.total}</div><div class="l">คาดว่ามี</div></div>
+      </div><div class="muted" style="margin-top:8px">${esc(lc.date)}</div>`;
+    } else box.innerHTML='<div class="empty">ยังไม่มีการนับสต็อก</div>';
+  }catch(e){toast(e.message,'err');}
+}
+function drawDonut(id,obj){
+  const ctx=document.getElementById(id); if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(obj),
+    datasets:[{data:Object.values(obj),backgroundColor:['#0d2a52','#2b5fb0','#1a9d5a','#e0a100','#e2231a','#8e6fd0','#28b3b3','#8494a8']}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},cutout:'62%'}});
+}
+function drawBar(id,obj,colors){
+  const ctx=document.getElementById(id); if(charts[id])charts[id].destroy();
+  const labels=Object.keys(obj);
+  charts[id]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:Object.values(obj),
+    backgroundColor:labels.map((_,i)=>colors[i%colors.length]),borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+
+/* ============ ASSETS ============ */
+let assetTimer;
+function debouncedAssets(){clearTimeout(assetTimer);assetTimer=setTimeout(loadAssets,350);}
+async function loadAssets(){
+  const filter={ q:val('aSearch'), category:val('aCat'), zone:val('aZone'), status:val('aStatus') };
+  try{
+    ASSETS=(await api('listAssets',{filter})).assets;
+    const tb=document.querySelector('#assetTbl tbody'); tb.innerHTML='';
+    document.getElementById('assetEmpty').style.display=ASSETS.length?'none':'block';
+    ASSETS.forEach(a=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><b>${esc(a.wfdcId)}</b></td><td>${esc(a.makroTag||'-')}</td>
+        <td class="wrap">${esc(a.name)}</td><td>${esc(a.category||'-')}</td><td>${esc(a.zone||'-')}</td>
+        <td>${statusChip(a.status)}</td><td>${a.photos.length?('📷 '+a.photos.length):'-'}</td>
+        <td><button class="btn ghost sm" onclick='openAsset(${JSON.stringify(a.assetId)})'>แก้ไข</button></td>`;
+      tb.appendChild(tr);
+    });
+  }catch(e){toast(e.message,'err');}
+}
+function val(id){return document.getElementById(id).value.trim();}
+
+/* ---- asset modal ---- */
+let editing=null;
+function openAsset(assetId){
+  editing = assetId ? ASSETS.find(a=>a.assetId===assetId) : null;
+  document.getElementById('amTitle').textContent = editing?'แก้ไขทรัพย์สิน':'เพิ่มทรัพย์สิน';
+  document.getElementById('mAssetId').value = editing?editing.assetId:'';
+  set('mWfdc',editing?editing.wfdcId:''); document.getElementById('mWfdc').disabled=!!editing;
+  set('mMakro',editing?editing.makroTag:''); set('mName',editing?editing.name:'');
+  set('mCat',editing?editing.category:''); set('mZone',editing?editing.zone:'');
+  set('mOwner',editing?editing.owner:''); set('mStatus',editing?editing.status:'ใช้งานปกติ');
+  set('mNote',editing?editing.note:'');
+  photoState = editing ? (editing.photoSlots||['','','','']).slice(0,4) : ['','','',''];
+  while(photoState.length<4)photoState.push('');
+  renderPhotos();
+  document.getElementById('reasonBox').style.display='none';
+  document.getElementById('mDetail').value='';
+  // log
+  const lb=document.getElementById('logBox');
+  if(editing){ lb.style.display='block'; loadAssetLog(editing.assetId); } else lb.style.display='none';
+  open_('assetModal');
+}
+function set(id,v){document.getElementById(id).value=v||'';}
+function closeAsset(){close_('assetModal');}
+function onStatusChange(){
+  if(!editing)return;
+  const changed = val('mStatus')!==editing.status;
+  document.getElementById('reasonBox').style.display = changed?'block':'none';
+}
+async function loadAssetLog(assetId){
+  try{ const logs=(await api('getAssetLog',{assetId})).logs;
+    document.getElementById('logBody').innerHTML = logs.length?logs.map(l=>
+      `<tr><td>${esc(l.time)}</td><td>${esc(l.user)}</td><td>${esc(l.action)}</td>
+       <td>${esc(l.oldStatus)}→${esc(l.newStatus)}</td><td class="wrap">${esc(l.reason)} ${esc(l.detail)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="muted">ยังไม่มีประวัติ</td></tr>';
+  }catch(e){}
+}
+
+/* ---- photos ---- */
+function renderPhotos(){
+  const g=document.getElementById('photoGrid'); g.innerHTML='';
+  for(let i=0;i<MAX_PHOTOS;i++){
+    const url=photoState[i];
+    const slot=document.createElement('label');
+    slot.className='photo-slot'+(url?' filled':'');
+    slot.innerHTML = url
+      ? `<img src="${esc(url)}"><button class="rm" onclick="removePhoto(event,${i})">×</button>`
+      : `<div class="ph-ic">📷<br><small>ถ่าย/เลือก</small></div>`;
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept='image/*'; inp.capture='environment';
+    inp.onchange=e=>handlePhoto(e,i);
+    slot.appendChild(inp);
+    g.appendChild(slot);
+  }
+}
+function removePhoto(e,i){ e.preventDefault(); e.stopPropagation(); photoState[i]=''; renderPhotos(); }
+async function handlePhoto(e,i){
+  const file=e.target.files[0]; if(!file)return;
+  const wfdc=val('mWfdc');
+  if(!wfdc){ toast('กรอกเลข WFDC ก่อนอัพรูป','err'); e.target.value=''; return; }
+  toast('กำลังอัพโหลดรูป...');
+  try{
+    const b64 = await resizeToBase64(file, 1100, 0.72);
+    const d = await api('uploadPhoto',{ wfdcId:wfdc, filename:'p'+(i+1)+'.jpg', mimeType:'image/jpeg', dataBase64:b64 });
+    photoState[i]=d.url; renderPhotos(); toast('อัพโหลดรูปแล้ว','ok');
+  }catch(err){ toast('อัพรูปไม่สำเร็จ: '+err.message,'err'); }
+  e.target.value='';
+}
+function resizeToBase64(file,maxSize,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image(); const r=new FileReader();
+    r.onload=()=>{img.src=r.result;}; r.onerror=reject; r.readAsDataURL(file);
+    img.onload=()=>{
+      let {width,height}=img;
+      if(width>height && width>maxSize){height=height*maxSize/width;width=maxSize;}
+      else if(height>maxSize){width=width*maxSize/height;height=maxSize;}
+      const c=document.createElement('canvas'); c.width=width;c.height=height;
+      c.getContext('2d').drawImage(img,0,0,width,height);
+      resolve(c.toDataURL('image/jpeg',quality).split(',')[1]);
+    };
+    img.onerror=reject;
+  });
+}
+async function saveAsset(){
+  const wfdc=val('mWfdc'), name=val('mName');
+  if(!wfdc){toast('กรอกเลข WFDC','err');return;}
+  if(!name){toast('กรอกชื่อทรัพย์สิน','err');return;}
+  const payload={ wfdcId:wfdc, makroTag:val('mMakro'), name, category:val('mCat'),
+    zone:val('mZone'), owner:val('mOwner'), status:val('mStatus'), note:val('mNote'),
+    photos:photoState.slice(0,4) };
+  const btn=document.getElementById('amSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  try{
+    if(editing){
+      payload.assetId=editing.assetId;
+      if(val('mStatus')!==editing.status){
+        payload.reason=val('mReason'); payload.detail=val('mDetail');
+        if(!payload.reason){toast('เลือกเหตุผลการเปลี่ยนสถานะ','err');btn.disabled=false;btn.textContent='บันทึก';return;}
+      }
+      await api('updateAsset',payload); toast('บันทึกการแก้ไขแล้ว','ok');
+    }else{
+      await api('createAsset',payload); toast('เพิ่มทรัพย์สินแล้ว','ok');
+    }
+    closeAsset(); loadAssets();
+  }catch(e){toast(e.message,'err');}
+  btn.disabled=false; btn.textContent='บันทึก';
+}
+
+/* ============ PHYSICAL COUNT ============ */
+async function loadSessions(){
+  backToSessions();
+  try{
+    const ss=(await api('listSessions')).sessions;
+    const tb=document.querySelector('#sessTbl tbody'); tb.innerHTML='';
+    if(!ss.length){tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรอบนับ</td></tr>';return;}
+    ss.forEach(s=>{
+      const tr=document.createElement('tr');
+      const st={counting:'warn',recheck:'move',done:'ok'}[s.Status]||'ok';
+      tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(s.CreatedDate)}</td><td>${esc(s.CreatedBy)}</td>
+        <td>${esc(s.Round)}</td><td><span class="chip ${st}">${esc(s.Status)}</span></td>
+        <td><button class="btn ghost sm" onclick='openSession(${JSON.stringify(s.SessionID)})'>เปิด</button></td>`;
+      tb.appendChild(tr);
+    });
+  }catch(e){toast(e.message,'err');}
+}
+async function newSession(){
+  try{ const d=await api('createSession',{}); toast('สร้างรอบนับใหม่','ok'); openSession(d.sessionId); }
+  catch(e){toast(e.message,'err');}
+}
+async function openSession(sessionId){
+  try{
+    const d=await api('getSession',{sessionId});
+    SESSION=d.session;
+    document.getElementById('countHome').style.display='none';
+    document.getElementById('countActive').style.display='block';
+    document.getElementById('csTitle').textContent='รอบนับ: '+SESSION.SessionID;
+    document.getElementById('csSub').textContent='รอบที่ '+SESSION.Round+' · สถานะ '+SESSION.Status;
+    document.getElementById('scanLog').innerHTML='';
+    refreshResult();
+  }catch(e){toast(e.message,'err');}
+}
+function backToSessions(){
+  stopScan();
+  document.getElementById('countHome').style.display='block';
+  document.getElementById('countActive').style.display='none';
+  SESSION=null;
+}
+function toggleScan(){ scanning?stopScan():startScan(); }
+function startScan(){
+  if(!SESSION)return;
+  scanner=new Html5Qrcode('reader');
+  scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:120}},
+    onScan, ()=>{}).then(()=>{
+      scanning=true; document.getElementById('scanToggle').textContent='■ ปิดกล้อง';
+    }).catch(e=>toast('เปิดกล้องไม่ได้: '+e,'err'));
+}
+function stopScan(){
+  if(scanner&&scanning){ scanner.stop().then(()=>scanner.clear()).catch(()=>{}); }
+  scanning=false; const b=document.getElementById('scanToggle'); if(b)b.textContent='▶ เปิดกล้อง';
+}
+let lastScan='',lastScanTime=0;
+async function onScan(text){
+  const now=Date.now();
+  if(text===lastScan && now-lastScanTime<2500)return; // กันสแกนรัว
+  lastScan=text; lastScanTime=now;
+  await submitScan(text);
+}
+function manualScanGo(){ const v=val('manualScan'); if(!v)return; submitScan(v); document.getElementById('manualScan').value=''; }
+async function submitScan(wfdcId){
+  try{
+    const d=await api('scanCount',{sessionId:SESSION.SessionID, wfdcId});
+    const log=document.getElementById('scanLog');
+    let dot='g',msg=d.name||wfdcId;
+    if(d.duplicate){dot='y';msg=wfdcId+' (สแกนซ้ำ)';}
+    else if(!d.matched){dot='r';msg=wfdcId+' — ไม่พบในระบบ (เกิน)';}
+    const it=document.createElement('div'); it.className='scan-item';
+    it.innerHTML=`<span class="dot ${dot}"></span><b>${esc(wfdcId)}</b> <span class="muted">${esc(d.name||'')}</span>${d.duplicate?' <span class="chip warn">ซ้ำ</span>':(d.matched?'':' <span class="chip danger">เกิน</span>')}`;
+    log.prepend(it);
+    if(!d.duplicate){ if(navigator.vibrate)navigator.vibrate(60); refreshResult(); }
+  }catch(e){toast(e.message,'err');}
+}
+async function refreshResult(){
+  try{
+    const r=(await api('countResult',{sessionId:SESSION.SessionID})).result;
+    document.getElementById('csFound').textContent=r.found;
+    document.getElementById('csMissing').textContent=r.missing;
+    document.getElementById('csExtra').textContent=r.extra;
+    document.getElementById('csTotal').textContent=r.total;
+    window._lastResult=r;
+  }catch(e){}
+}
+function showResult(){
+  const r=window._lastResult; if(!r)return;
+  let h=`<div class="stats" style="margin-bottom:14px">
+    <div class="stat"><div class="n" style="color:var(--ok)">${r.found}</div><div class="l">พบ</div></div>
+    <div class="stat"><div class="n" style="color:var(--danger)">${r.missing}</div><div class="l">ขาด</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">${r.extra}</div><div class="l">เกิน</div></div></div>`;
+  if(r.missingItems.length){ h+='<b>รายการที่ขาด (ยังไม่ถูกสแกน)</b><div class="tbl-wrap" style="max-height:200px;margin:6px 0 14px"><table><thead><tr><th>WFDC</th><th>ชื่อ</th><th>โซน</th></tr></thead><tbody>'+
+    r.missingItems.map(m=>`<tr><td>${esc(m.wfdcId)}</td><td class="wrap">${esc(m.name)}</td><td>${esc(m.zone)}</td></tr>`).join('')+'</tbody></table></div>'; }
+  if(r.extraItems.length){ h+='<b>รายการเกิน (สแกนเจอแต่ไม่มีในระบบ)</b><div class="tbl-wrap" style="max-height:160px;margin-top:6px"><table><thead><tr><th>WFDC</th></tr></thead><tbody>'+
+    r.extraItems.map(m=>`<tr><td>${esc(m.wfdcId)}</td></tr>`).join('')+'</tbody></table></div>'; }
+  document.getElementById('resultBody').innerHTML=h; open_('resultModal');
+}
+async function doRecheck(){
+  if(!confirm('เริ่มรอบ Recheck? ระบบจะขึ้นรอบถัดไปเพื่อตามนับรายการที่ขาด'))return;
+  try{ const d=await api('recheckSession',{sessionId:SESSION.SessionID});
+    toast('เข้าสู่รอบ Recheck รอบ '+d.round,'ok'); openSession(SESSION.SessionID); }
+  catch(e){toast(e.message,'err');}
+}
+async function doClose(){
+  if(!confirm('ปิดรอบนับนี้? จะไม่สามารถสแกนเพิ่มได้'))return;
+  try{ await api('closeSession',{sessionId:SESSION.SessionID}); toast('ปิดรอบนับแล้ว','ok'); backToSessions(); loadSessions(); }
+  catch(e){toast(e.message,'err');}
+}
+
+/* ============ BARCODE ============ */
+let bcSelected={};
+async function loadBarcodePage(){
+  try{ ASSETS=(await api('listAssets',{})).assets; renderBcList(); }catch(e){toast(e.message,'err');}
+}
+function renderBcList(){
+  const q=val('bcSearch').toLowerCase();
+  const list=ASSETS.filter(a=>!q || (a.wfdcId+' '+a.name).toLowerCase().indexOf(q)>=0);
+  const el=document.getElementById('bcList');
+  el.innerHTML = list.length?list.map(a=>`<div class="bc-row">
+    <input type="checkbox" ${bcSelected[a.wfdcId]?'checked':''} onchange="bcToggle('${esc(a.wfdcId)}',this.checked)">
+    <b>${esc(a.wfdcId)}</b> <span class="muted">${esc(a.name)}</span></div>`).join('')
+    : '<div class="empty">ไม่พบรายการ</div>';
+  updateBcCount();
+}
+function bcToggle(w,on){ if(on)bcSelected[w]=true; else delete bcSelected[w]; updateBcCount(); }
+function bcSelectAll(on){
+  const q=val('bcSearch').toLowerCase();
+  ASSETS.filter(a=>!q||(a.wfdcId+' '+a.name).toLowerCase().indexOf(q)>=0).forEach(a=>{ if(on)bcSelected[a.wfdcId]=true; else delete bcSelected[a.wfdcId]; });
+  renderBcList();
+}
+function updateBcCount(){ document.getElementById('bcCount').textContent=Object.keys(bcSelected).length; }
+function printBarcodes(){
+  const sel=ASSETS.filter(a=>bcSelected[a.wfdcId]);
+  if(!sel.length){toast('เลือกอย่างน้อย 1 รายการ','err');return;}
+  const sheet=document.getElementById('labelSheet'); sheet.innerHTML='';
+  sel.forEach(a=>{
+    const div=document.createElement('div'); div.className='label';
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    div.appendChild(svg);
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.name||a.wfdcId;
+    div.appendChild(nm);
+    sheet.appendChild(div);
+    JsBarcode(svg, a.wfdcId, { format:'CODE128', width:1.4, height:34, fontSize:10, margin:0, displayValue:true });
+  });
+  setTimeout(()=>window.print(),300);
+}
+
+/* ============ EXPORT ============ */
+function exFilter(){ return { category:val('exCat'), zone:val('exZone'), status:val('exStatus'), source:document.getElementById('exSource').value }; }
+async function exportExcel(){
+  const msg=document.getElementById('exMsg'); msg.textContent='กำลังสร้าง Excel...';
+  try{
+    const assets=(await api('listAssets',{filter:exFilter()})).assets;
+    const wb=new ExcelJS.Workbook(); const ws=wb.addWorksheet('Assets');
+    ws.columns=[
+      {header:'WFDC ID',key:'w',width:18},{header:'Makro Tag',key:'m',width:16},
+      {header:'ชื่อ',key:'n',width:28},{header:'หมวดหมู่',key:'c',width:20},
+      {header:'โซน',key:'z',width:14},{header:'ผู้รับผิดชอบ',key:'o',width:16},
+      {header:'สถานะ',key:'s',width:14},{header:'วันที่',key:'d',width:14},
+      {header:'รูป 1',key:'p1',width:12},{header:'รูป 2',key:'p2',width:12},
+      {header:'รูป 3',key:'p3',width:12},{header:'รูป 4',key:'p4',width:12},{header:'หมายเหตุ',key:'note',width:24}
+    ];
+    ws.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};
+    ws.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0D2A52'}};
+    assets.forEach(a=>{
+      const row=ws.addRow({w:a.wfdcId,m:a.makroTag,n:a.name,c:a.category,z:a.zone,o:a.owner,s:a.status,d:a.registerDate,note:a.note});
+      const cols=['p1','p2','p3','p4'];
+      (a.photoSlots||[]).forEach((u,i)=>{ if(u){ const cell=row.getCell(cols[i]); cell.value={text:'ดูรูป '+(i+1),hyperlink:u}; cell.font={color:{argb:'FF2B5FB0'},underline:true}; }});
+    });
+    const buf=await wb.xlsx.writeBuffer();
+    dl(new Blob([buf]),'AssetChecker_'+today()+'.xlsx');
+    msg.textContent='ดาวน์โหลด Excel แล้ว ('+assets.length+' รายการ)';
+  }catch(e){msg.textContent='';toast(e.message,'err');}
+}
+async function exportPDF(){
+  const msg=document.getElementById('exMsg'); msg.textContent='กำลังสร้าง PDF (โหลดรูป)...';
+  try{
+    const assets=(await api('listAssets',{filter:exFilter()})).assets;
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    doc.setFontSize(14); doc.text('Asset Checker (WFDC) — รายการทรัพย์สิน',14,14);
+    doc.setFontSize(9); doc.text('วันที่ออก: '+today()+' · จำนวน '+assets.length+' รายการ',14,20);
+
+    // preload รูปแรกของแต่ละรายการเป็น base64 (ผ่าน backend เลี่ยง CORS)
+    const imgMap={};
+    for(const a of assets){
+      const u=(a.photoSlots||[]).find(x=>x);
+      if(u){ try{ const p=await api('photoData',{url:u}); imgMap[a.assetId]='data:'+p.mime+';base64,'+p.dataBase64; }catch(e){} }
+    }
+    const body=assets.map(a=>[a.wfdcId,a.makroTag||'-',a.name,a.category||'-',a.zone||'-',a.status,'']);
+    doc.autoTable({
+      startY:24, head:[['WFDC ID','Makro','ชื่อ','หมวด','โซน','สถานะ','รูป']],
+      body, styles:{fontSize:8,cellPadding:2,minCellHeight:20,valign:'middle'},
+      headStyles:{fillColor:[13,42,82]}, columnStyles:{6:{cellWidth:26}},
+      didDrawCell:function(data){
+        if(data.section==='body' && data.column.index===6){
+          const a=assets[data.row.index]; const img=imgMap[a.assetId];
+          if(img){ try{ doc.addImage(img,'JPEG',data.cell.x+1,data.cell.y+1,22,18); }catch(e){} }
+        }
+      }
+    });
+    doc.save('AssetChecker_'+today()+'.pdf');
+    msg.textContent='ดาวน์โหลด PDF แล้ว ('+assets.length+' รายการ)';
+  }catch(e){msg.textContent='';toast(e.message,'err');}
+}
+function dl(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
+function today(){ return new Date().toISOString().slice(0,10); }
+
+/* ============ SETTINGS ============ */
+let curTab='users';
+function setTab(tab,btn){
+  curTab=tab;
+  document.querySelectorAll('#setTabs button').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  if(tab==='users')renderUsers(); else renderConfigTab(tab);
+}
+async function renderUsers(){
+  const body=document.getElementById('setBody');
+  body.innerHTML='<div class="card"><div class="row" style="justify-content:space-between"><b>พนักงานที่มีสิทธิ์</b><button class="btn red sm" onclick="userModal()">+ เพิ่มพนักงาน</button></div></div><div class="tbl-wrap"><table id="uTbl"><thead><tr><th>เลขพนักงาน</th><th>ชื่อ</th><th>แผนก</th><th>ตำแหน่ง</th><th>Role</th><th>สถานะ</th><th></th></tr></thead><tbody></tbody></table></div>';
+  try{
+    const us=(await api('listUsers')).users;
+    const tb=document.querySelector('#uTbl tbody');
+    tb.innerHTML=us.map(u=>`<tr><td><b>${esc(u.EmployeeID)}</b></td><td>${esc(u.Name)}</td><td>${esc(u.Department)}</td>
+      <td>${esc(u.Position)}</td><td><span class="chip ${u.Role==='admin'?'danger':'move'}">${esc(u.Role)}</span></td>
+      <td>${u.Active?'<span class="chip ok">ใช้งาน</span>':'<span class="chip warn">ปิด</span>'}</td>
+      <td><button class="btn ghost sm" onclick='userModal(${JSON.stringify(u)})'>แก้ไข</button></td></tr>`).join('');
+  }catch(e){toast(e.message,'err');}
+}
+function userModal(u){
+  const roles=CONFIG.role.map(r=>`<option ${u&&u.Role===r.value?'selected':''}>${esc(r.value)}</option>`).join('');
+  document.getElementById('cfgTitle').textContent=u?'แก้ไขพนักงาน':'เพิ่มพนักงาน';
+  document.getElementById('cfgBody').innerHTML=`
+    <label class="f req">เลขพนักงาน</label><input id="cEmp" class="inp" value="${u?esc(u.EmployeeID):''}" ${u?'disabled':''}>
+    <label class="f" style="margin-top:8px">ชื่อ</label><input id="cName" class="inp" value="${u?esc(u.Name):''}">
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+      <div><label class="f">แผนก</label><input id="cDep" class="inp" value="${u?esc(u.Department):''}"></div>
+      <div><label class="f">ตำแหน่ง</label><input id="cPos" class="inp" value="${u?esc(u.Position):''}"></div>
+    </div>
+    <label class="f" style="margin-top:8px">Role</label><select id="cRole" class="inp">${roles}</select>
+    ${u?`<label class="f" style="margin-top:8px">สถานะ</label><select id="cActive" class="inp"><option value="true" ${u.Active?'selected':''}>ใช้งาน</option><option value="false" ${!u.Active?'selected':''}>ปิดใช้งาน</option></select>`:''}`;
+  document.getElementById('cfgSave').onclick=async()=>{
+    const payload={ empId:val('cEmp'), name:val('cName'), department:val('cDep'), position:val('cPos'), role:val('cRole') };
+    if(!payload.empId){toast('กรอกเลขพนักงาน','err');return;}
+    try{
+      if(u){ payload.active=document.getElementById('cActive').value==='true'; await api('updateUser',payload); }
+      else await api('addUser',payload);
+      toast('บันทึกแล้ว','ok'); close_('cfgModal'); renderUsers();
+    }catch(e){toast(e.message,'err');}
+  };
+  open_('cfgModal');
+}
+async function renderConfigTab(type){
+  const labels={role:'Role',category:'หมวดหมู่',zone:'โซน',status:'สถานะ',reason:'เหตุผล'};
+  const body=document.getElementById('setBody');
+  body.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><b>${labels[type]}</b><button class="btn red sm" onclick="cfgItemModal('${type}')">+ เพิ่ม</button></div></div><div class="tbl-wrap"><table id="cTbl"><thead><tr><th>ลำดับ</th><th>ชื่อ</th><th></th></tr></thead><tbody></tbody></table></div>`;
+  try{
+    const items=(await api('listConfig',{type})).items;
+    document.querySelector('#cTbl tbody').innerHTML=items.map(it=>`<tr><td>${esc(it.order)}</td><td class="wrap">${esc(it.value)}</td>
+      <td><button class="btn ghost sm" onclick='cfgItemModal("${type}",${JSON.stringify(it)})'>แก้</button>
+      <button class="btn ghost sm" onclick="cfgDelete(${it.row})">ลบ</button></td></tr>`).join('')
+      || '<tr><td colspan="3" class="muted">ยังไม่มีรายการ</td></tr>';
+  }catch(e){toast(e.message,'err');}
+}
+function cfgItemModal(type,it){
+  document.getElementById('cfgTitle').textContent=(it?'แก้ไข':'เพิ่ม')+'รายการ';
+  document.getElementById('cfgBody').innerHTML=`<label class="f req">ชื่อ</label><input id="cVal" class="inp" value="${it?esc(it.value):''}">
+    <label class="f" style="margin-top:8px">ลำดับ</label><input id="cOrder" class="inp" type="number" value="${it?esc(it.order):''}">`;
+  document.getElementById('cfgSave').onclick=async()=>{
+    const value=val('cVal'), order=Number(val('cOrder'))||0;
+    if(!value){toast('กรอกชื่อ','err');return;}
+    try{
+      if(it) await api('updateConfig',{row:it.row,value,order});
+      else await api('addConfig',{type,value,order});
+      await refreshConfig(); toast('บันทึกแล้ว','ok'); close_('cfgModal'); renderConfigTab(type);
+    }catch(e){toast(e.message,'err');}
+  };
+  open_('cfgModal');
+}
+async function cfgDelete(row){
+  if(!confirm('ลบรายการนี้?'))return;
+  try{ await api('deleteConfig',{row}); await refreshConfig(); renderConfigTab(curTab); toast('ลบแล้ว','ok'); }
+  catch(e){toast(e.message,'err');}
+}
+async function refreshConfig(){
+  try{ const d=await api('bootstrap'); CONFIG=d.config; fillConfigDropdowns(); }catch(e){}
+}
+
+/* ---------- modal helpers ---------- */
+function open_(id){document.getElementById(id).classList.add('open');}
+function close_(id){document.getElementById(id).classList.remove('open');}
+</script>
+</body>
+</html>
