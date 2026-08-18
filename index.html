@@ -292,7 +292,11 @@ td.wrap{white-space:normal}
       <section id="page-barcode" class="page">
         <div class="page-head"><h2>พิมพ์บาร์โค้ด</h2></div>
         <div class="card">
-          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · TSC MB241 · ปรับขนาดให้ตรง label จริงได้ด้านล่าง</div>
+          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · TSC MB241 (USB) · ปรับขนาดให้ตรง label จริงได้ด้านล่าง</div>
+          <div class="row" style="margin-bottom:12px">
+            <button class="btn primary sm" id="printerBtn" onclick="connectPrinter()">🔌 เชื่อมต่อเครื่องพิมพ์ USB</button>
+            <span class="muted" id="printerStatus">ยังไม่ได้เชื่อมต่อ — จะพิมพ์ผ่าน browser แทน</span>
+          </div>
           <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:12px">
             <div><label class="f">กว้าง/ดวง (นิ้ว)</label><input id="bcW" class="inp" type="number" step="0.05" value="1.5"></div>
             <div><label class="f">สูง (นิ้ว)</label><input id="bcH" class="inp" type="number" step="0.05" value="1"></div>
@@ -300,6 +304,8 @@ td.wrap{white-space:normal}
             <div><label class="f">ขอบซ้าย (mm)</label><input id="bcLeft" class="inp" type="number" step="0.5" value="2"></div>
             <div><label class="f">ดวง/แถว</label><input id="bcCols" class="inp" type="number" value="3"></div>
             <div><label class="f">สูงบาร์โค้ด (px)</label><input id="bcBarH" class="inp" type="number" value="42"></div>
+            <div><label class="f">Density</label><input id="bcDensity" class="inp" type="number" min="0" max="15" value="8"></div>
+            <div><label class="f">Speed</label><input id="bcSpeed" class="inp" type="number" min="1" max="6" value="4"></div>
           </div>
           <div class="row" style="margin-bottom:10px">
             <input id="bcSearch" class="inp" style="flex:1;min-width:160px" placeholder="ค้นหาเพื่อกรอง" oninput="renderBcList()">
@@ -310,7 +316,7 @@ td.wrap{white-space:normal}
           <div class="row" style="margin-top:12px">
             <span class="muted">เลือกแล้ว <b id="bcCount">0</b> รายการ</span>
             <div class="spacer" style="flex:1"></div>
-            <button class="btn red" onclick="printBarcodes()">🖨️ พิมพ์</button>
+            <button class="btn red" id="printBtn" onclick="printBarcodes()">🖨️ พิมพ์</button>
           </div>
         </div>
       </section>
@@ -813,15 +819,77 @@ function bcSelectAll(on){
   renderBcList();
 }
 function updateBcCount(){ document.getElementById('bcCount').textContent=Object.keys(bcSelected).length; }
-function printBarcodes(){
+/* ============ PRINTER (Web Serial / TSPL) ============ */
+let printerPort=null, printerWriter=null;
+async function connectPrinter(){
+  if(!('serial' in navigator)){
+    toast('เบราว์เซอร์นี้ไม่รองรับ Web Serial — ใช้ Chrome/Edge บนคอมเท่านั้น','err');
+    return;
+  }
+  try{
+    printerPort = await navigator.serial.requestPort();
+    await printerPort.open({ baudRate: 9600 });
+    printerWriter = printerPort.writable.getWriter();
+    document.getElementById('printerStatus').textContent='✅ เชื่อมต่อเครื่องพิมพ์แล้ว (USB)';
+    document.getElementById('printerBtn').textContent='🔌 เชื่อมต่อแล้ว';
+    toast('เชื่อมต่อเครื่องพิมพ์สำเร็จ','ok');
+  }catch(e){
+    toast('เชื่อมต่อไม่สำเร็จ: '+e.message,'err');
+    printerPort=null; printerWriter=null;
+  }
+}
+function tsplEsc(s){ return String(s||'').replace(/"/g,"'"); }
+function buildTSPL(items, opt){
+  // opt: {Win, Hin, gapMm, leftMm, density, speed}
+  const Wmm=(opt.Win*25.4).toFixed(1), Hmm=(opt.Hin*25.4).toFixed(1);
+  let cmd = '';
+  cmd += 'SIZE '+Wmm+' mm,'+Hmm+' mm\r\n';
+  cmd += 'GAP '+opt.gapMm+' mm,0 mm\r\n';
+  cmd += 'DIRECTION 1\r\n';
+  cmd += 'DENSITY '+opt.density+'\r\n';
+  cmd += 'SPEED '+opt.speed+'\r\n';
+  cmd += 'REFERENCE 0,0\r\n';
+  cmd += 'SET TEAR ON\r\n';
+  items.forEach(a=>{
+    cmd += 'CLS\r\n';
+    // barcode 128: BARCODE x,y,"128",height,human-readable,rotation,narrow,wide,"content"
+    cmd += 'BARCODE 30,10,"128",70,1,0,2,2,"'+tsplEsc(a.wfdcId)+'"\r\n';
+    // ชื่อทรัพย์สินด้านล่าง (font 3 = ขนาดกลาง, จัดกึ่งกลางคร่าวๆ)
+    var name=tsplEsc(a.name||a.wfdcId).slice(0,26);
+    cmd += 'TEXT 20,150,"3",0,1,1,"'+name+'"\r\n';
+    cmd += 'PRINT 1,1\r\n';
+  });
+  return cmd;
+}
+async function sendTSPL(text){
+  const enc=new TextEncoder();
+  await printerWriter.write(enc.encode(text));
+}
+async function printBarcodes(){
   const sel=ASSETS.filter(a=>bcSelected[a.wfdcId]);
   if(!sel.length){toast('เลือกอย่างน้อย 1 รายการ','err');return;}
   const W=parseFloat(val('bcW'))||1.5, H=parseFloat(val('bcH'))||1,
         gapMm=parseFloat(val('bcGap'))||0, leftMm=parseFloat(val('bcLeft'))||0,
-        cols=parseInt(val('bcCols'))||3, bh=parseInt(val('bcBarH'))||42;
+        cols=parseInt(val('bcCols'))||3, bh=parseInt(val('bcBarH'))||42,
+        density=parseInt(val('bcDensity'))||8, speed=parseInt(val('bcSpeed'))||4;
+
+  if(printerPort && printerWriter){
+    // พิมพ์ตรงผ่าน TSPL — แม่นกว่า ไม่ผ่าน browser layout
+    const btn=document.getElementById('printBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> กำลังพิมพ์...';
+    try{
+      const tspl = buildTSPL(sel, { Win:W, Hin:H, gapMm, leftMm, density, speed });
+      await sendTSPL(tspl);
+      toast('ส่งคำสั่งพิมพ์ไปเครื่อง TSC แล้ว ('+sel.length+' ดวง)','ok');
+    }catch(e){
+      toast('พิมพ์ผ่าน USB ไม่สำเร็จ: '+e.message+' — ลองพิมพ์ผ่าน browser แทน','err');
+    }
+    btn.disabled=false; btn.textContent='🖨️ พิมพ์';
+    return;
+  }
+
+  // fallback: พิมพ์ผ่าน browser print (เดิม)
   const gapIn=gapMm/25.4, leftIn=leftMm/25.4;
   const pageW=(leftIn + W*cols + gapIn*(cols>1?cols-1:0)).toFixed(3);
-  // inject print sizing (override ตามที่กรอก)
   let ps=document.getElementById('printStyle'); if(ps)ps.remove();
   ps=document.createElement('style'); ps.id='printStyle';
   ps.textContent='@media print{@page{size:'+pageW+'in auto;margin:0}'+
