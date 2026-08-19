@@ -437,13 +437,14 @@ let photoState = ['','','',''];   // urls
 const MAX_PHOTOS = 4;
 
 /* ---------- api ---------- */
-async function api(action, payload={}) {
+async function api(action, payload={}, _try=0) {
   const authEmp = USER ? USER.empId : (payload.empId || '');
   const body = JSON.stringify(Object.assign({ action }, payload, { empId: authEmp }));
   let res;
   try {
     res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
   } catch (netErr) {
+    if (_try < 2) { await sleep(600); return api(action, payload, _try+1); }
     throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ตรวจสอบอินเทอร์เน็ต หรือ URL backend');
   }
   const raw = await res.text();
@@ -451,11 +452,14 @@ async function api(action, payload={}) {
   try {
     data = JSON.parse(raw);
   } catch (parseErr) {
+    // GAS ตอบ HTML ชั่วคราว (interstitial) — ลองใหม่ก่อน
+    if (_try < 2) { await sleep(700); return api(action, payload, _try+1); }
     throw new Error('Backend ตอบกลับผิดรูปแบบ — ไป Apps Script > Manage deployments > ตั้ง "Who has access" = Anyone แล้ว Deploy เวอร์ชันใหม่');
   }
   if (!data.ok) throw new Error(data.error || 'error');
   return data;
 }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 function toast(msg, kind='') { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+kind; setTimeout(()=>t.className='toast',2600); }
 
 /* ---------- login ---------- */
@@ -950,26 +954,52 @@ async function exportExcel(){
     msg.textContent='ดาวน์โหลด Excel แล้ว ('+assets.length+' รายการ)';
   }catch(e){msg.textContent='';toast(e.message,'err');}
 }
+let THAI_FONT_B64=null;
+function abToBase64(buf){
+  let bin=''; const bytes=new Uint8Array(buf), chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){ bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk)); }
+  return btoa(bin);
+}
+async function ensureThaiFont(doc){
+  if(!THAI_FONT_B64){
+    const r=await fetch('https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Regular.ttf');
+    THAI_FONT_B64=abToBase64(await r.arrayBuffer());
+  }
+  doc.addFileToVFS('Sarabun-Regular.ttf', THAI_FONT_B64);
+  doc.addFont('Sarabun-Regular.ttf','Sarabun','normal');
+  doc.setFont('Sarabun','normal');
+}
 async function exportPDF(){
-  const msg=document.getElementById('exMsg'); msg.textContent='กำลังสร้าง PDF (โหลดรูป)...';
+  const msg=document.getElementById('exMsg'); msg.textContent='กำลังเตรียมฟอนต์ไทย...';
   try{
     const assets=(await api('listAssets',{filter:exFilter()})).assets;
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    try{ await ensureThaiFont(doc); }catch(fe){ toast('โหลดฟอนต์ไทยไม่สำเร็จ ภาษาไทยอาจเพี้ยน','err'); }
     doc.setFontSize(14); doc.text('Asset Checker (WFDC) — รายการทรัพย์สิน',14,14);
     doc.setFontSize(9); doc.text('วันที่ออก: '+today()+' · จำนวน '+assets.length+' รายการ',14,20);
+    msg.textContent='กำลังสร้าง PDF (โหลดรูป)...';
 
-    // preload รูปแรกของแต่ละรายการเป็น base64 (ผ่าน backend เลี่ยง CORS)
+    // preload รูปแรกของแต่ละรายการเป็น base64 แบบขนาน (เร็วกว่าโหลดทีละใบมาก)
     const imgMap={};
-    for(const a of assets){
-      const u=(a.photoSlots||[]).find(x=>x);
-      if(u){ try{ const p=await api('photoData',{url:u}); imgMap[a.assetId]='data:'+p.mime+';base64,'+p.dataBase64; }catch(e){} }
+    const jobs=assets.map(a=>({ id:a.assetId, url:(a.photoSlots||[]).find(x=>x) })).filter(j=>j.url);
+    let done=0;
+    const CONC=5; // โหลดพร้อมกันทีละ 5 รูป
+    async function worker(queue){
+      while(queue.length){
+        const j=queue.shift();
+        try{ const p=await api('photoData',{url:j.url}); imgMap[j.id]='data:'+p.mime+';base64,'+p.dataBase64; }catch(e){}
+        done++; msg.textContent='กำลังโหลดรูป '+done+'/'+jobs.length+'...';
+      }
     }
+    const queue=jobs.slice();
+    await Promise.all(Array.from({length:Math.min(CONC,jobs.length||1)},()=>worker(queue)));
+    msg.textContent='กำลังสร้างไฟล์ PDF...';
     const body=assets.map(a=>[a.wfdcId,a.makroTag||'-',a.name,a.category||'-',a.zone||'-',a.status,'']);
     doc.autoTable({
       startY:24, head:[['WFDC ID','Makro','ชื่อ','หมวด','โซน','สถานะ','รูป']],
-      body, styles:{fontSize:8,cellPadding:2,minCellHeight:20,valign:'middle'},
-      headStyles:{fillColor:[13,42,82]}, columnStyles:{6:{cellWidth:26}},
+      body, styles:{font:'Sarabun',fontStyle:'normal',fontSize:8,cellPadding:2,minCellHeight:20,valign:'middle'},
+      headStyles:{font:'Sarabun',fontStyle:'normal',fillColor:[13,42,82]}, columnStyles:{6:{cellWidth:26}},
       didDrawCell:function(data){
         if(data.section==='body' && data.column.index===6){
           const a=assets[data.row.index]; const img=imgMap[a.assetId];
