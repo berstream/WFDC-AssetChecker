@@ -440,8 +440,19 @@ const MAX_PHOTOS = 4;
 async function api(action, payload={}) {
   const authEmp = USER ? USER.empId : (payload.empId || '');
   const body = JSON.stringify(Object.assign({ action }, payload, { empId: authEmp }));
-  const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
+  } catch (netErr) {
+    throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ตรวจสอบอินเทอร์เน็ต หรือ URL backend');
+  }
+  const raw = await res.text();
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (parseErr) {
+    throw new Error('Backend ตอบกลับผิดรูปแบบ — ไป Apps Script > Manage deployments > ตั้ง "Who has access" = Anyone แล้ว Deploy เวอร์ชันใหม่');
+  }
   if (!data.ok) throw new Error(data.error || 'error');
   return data;
 }
