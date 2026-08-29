@@ -611,7 +611,11 @@ async function doLogin(){
     USER=d.user; CONFIG=d.config||CONFIG;
     localStorage.setItem('ac_emp', empId);
     startApp();
-  }catch(e){ console.error('LOGIN DEBUG:', e); document.getElementById('loginMsg').textContent=e.message; }
+  }catch(e){
+    const dbg = 'URL='+location.protocol+'//'+location.host+' | authUser='+(auth.currentUser?auth.currentUser.email:'null')+' | err='+e.code+': '+e.message;
+    console.error('LOGIN DEBUG:', dbg);
+    document.getElementById('loginMsg').textContent = dbg;
+  }
   btn.disabled=false; btn.textContent='เข้าสู่ระบบ';
 }
 function logout(){ localStorage.removeItem('ac_emp'); auth.signOut().catch(()=>{}); location.reload(); }
