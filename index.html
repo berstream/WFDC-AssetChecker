@@ -12,6 +12,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <style>
 :root{
@@ -147,16 +151,16 @@ td.wrap{white-space:normal}
 .bc-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
 #printArea{display:none}
 @media print{
-  #login,#app{display:none !important}
-  #printArea{display:block !important;position:static;width:auto}
-  html,body{margin:0;padding:0;height:auto}
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{display:block;position:absolute;left:0;top:0;width:100%}
   .label-sheet{display:flex;flex-wrap:wrap}
-  /* ขนาดจริงถูก override ตอนพิมพ์ตามช่องที่กรอก (ดู printBarcodes) */
+  /* label 4in กว้าง, 3 ดวง/แถว => ~1.33in ต่อดวง, สูง 1in ; ปรับได้ที่นี่ */
   .label{width:1.33in;height:1in;box-sizing:border-box;display:flex;flex-direction:column;
-    align-items:center;justify-content:flex-start;padding:2px 2px 1px;overflow:hidden;page-break-inside:avoid}
-  .label svg{width:96%;height:auto;max-height:58%}
-  .label .nm{font-size:12pt;font-weight:800;text-align:center;line-height:1.08;margin-top:2px;
-    white-space:normal;overflow:hidden;max-width:98%;word-break:break-word}
+    align-items:center;justify-content:center;padding:2px;overflow:hidden;page-break-inside:avoid}
+  .label svg{max-width:100%;height:auto}
+  .label .nm{font-size:7pt;font-weight:700;text-align:center;line-height:1;margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   @page{size:4in auto;margin:0}
 }
 .seg{display:inline-flex;border:1px solid #cfd8e6;border-radius:10px;overflow:hidden}
@@ -292,21 +296,7 @@ td.wrap{white-space:normal}
       <section id="page-barcode" class="page">
         <div class="page-head"><h2>พิมพ์บาร์โค้ด</h2></div>
         <div class="card">
-          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · TSC MB241 (USB) · ปรับขนาดให้ตรง label จริงได้ด้านล่าง</div>
-          <div class="row" style="margin-bottom:12px">
-            <button class="btn primary sm" id="printerBtn" onclick="connectPrinter()">🔌 เชื่อมต่อเครื่องพิมพ์ USB</button>
-            <span class="muted" id="printerStatus">ยังไม่ได้เชื่อมต่อ — จะพิมพ์ผ่าน browser แทน</span>
-          </div>
-          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin-bottom:12px">
-            <div><label class="f">กว้าง/ดวง (นิ้ว)</label><input id="bcW" class="inp" type="number" step="0.01" value="1.26"></div>
-            <div><label class="f">สูง (นิ้ว)</label><input id="bcH" class="inp" type="number" step="0.01" value="1"></div>
-            <div><label class="f">gap (mm)</label><input id="bcGap" class="inp" type="number" step="0.5" value="2"></div>
-            <div><label class="f">ขอบซ้าย (mm)</label><input id="bcLeft" class="inp" type="number" step="0.5" value="2"></div>
-            <div><label class="f">ดวง/แถว</label><input id="bcCols" class="inp" type="number" value="3"></div>
-            <div><label class="f">สูงบาร์โค้ด (px)</label><input id="bcBarH" class="inp" type="number" value="42"></div>
-            <div><label class="f">Density</label><input id="bcDensity" class="inp" type="number" min="0" max="15" value="8"></div>
-            <div><label class="f">Speed</label><input id="bcSpeed" class="inp" type="number" min="1" max="6" value="4"></div>
-          </div>
+          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · Label 4×1 นิ้ว 3 ดวง/แถว (TSC MB241)</div>
           <div class="row" style="margin-bottom:10px">
             <input id="bcSearch" class="inp" style="flex:1;min-width:160px" placeholder="ค้นหาเพื่อกรอง" oninput="renderBcList()">
             <button class="btn ghost sm" onclick="bcSelectAll(true)">เลือกทั้งหมด</button>
@@ -316,7 +306,7 @@ td.wrap{white-space:normal}
           <div class="row" style="margin-top:12px">
             <span class="muted">เลือกแล้ว <b id="bcCount">0</b> รายการ</span>
             <div class="spacer" style="flex:1"></div>
-            <button class="btn red" id="printBtn" onclick="printBarcodes()">🖨️ พิมพ์</button>
+            <button class="btn red" onclick="printBarcodes()">🖨️ พิมพ์</button>
           </div>
         </div>
       </section>
@@ -426,9 +416,24 @@ td.wrap{white-space:normal}
 
 <script>
 /* ============================================================
-   CONFIG — วาง URL Web App ที่ deploy จาก Apps Script ตรงนี้
+   CONFIG — legacy GAS endpoint ยังใช้เป็น fallback สำหรับ action
+   ที่ยังไม่ย้ายมา Firestore (sessions/photos/admin — เฟสถัดไป)
    ============================================================ */
 const API_URL = 'https://script.google.com/macros/s/AKfycbyI-nIl2rOX2X7V4Sv_PlXBz6QceLfkWYWYA3f6Y3W-uS6huE6OzO1QtxNkbeWbvnw6/exec';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDEKb7A6lxi0hlG4WZfqpKyfPbl0ZW7hlU",
+  authDomain: "asset-wfdc.firebaseapp.com",
+  projectId: "asset-wfdc",
+  storageBucket: "asset-wfdc.firebasestorage.app",
+  messagingSenderId: "822123885726",
+  appId: "1:822123885726:web:6d8323bc8aa8314fda378f"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+db.enablePersistence({ synchronizeTabs: true }).catch(()=>{}); // offline cache — เงียบถ้า browser ไม่รองรับ (เช่นเปิดหลายแท็บชนกัน)
 
 /* ---------- state ---------- */
 let USER = null, CONFIG = { category:[], zone:[], status:[], reason:[], role:[], setting:{} };
@@ -436,30 +441,158 @@ let ASSETS = [], SESSION = null, scanner = null, scanning = false;
 let photoState = ['','','',''];   // urls
 const MAX_PHOTOS = 4;
 
-/* ---------- api ---------- */
-async function api(action, payload={}, _try=0) {
+/* ---------- legacy GAS fallback (action ที่ยังไม่ย้าย) ---------- */
+async function legacyApi(action, payload={}) {
   const authEmp = USER ? USER.empId : (payload.empId || '');
   const body = JSON.stringify(Object.assign({ action }, payload, { empId: authEmp }));
-  let res;
-  try {
-    res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
-  } catch (netErr) {
-    if (_try < 2) { await sleep(600); return api(action, payload, _try+1); }
-    throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ตรวจสอบอินเทอร์เน็ต หรือ URL backend');
-  }
-  const raw = await res.text();
-  let data;
-  try {
-    data = JSON.parse(raw);
-  } catch (parseErr) {
-    // GAS ตอบ HTML ชั่วคราว (interstitial) — ลองใหม่ก่อน
-    if (_try < 2) { await sleep(700); return api(action, payload, _try+1); }
-    throw new Error('Backend ตอบกลับผิดรูปแบบ — ไป Apps Script > Manage deployments > ตั้ง "Who has access" = Anyone แล้ว Deploy เวอร์ชันใหม่');
-  }
+  const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body });
+  const data = await res.json();
   if (!data.ok) throw new Error(data.error || 'error');
   return data;
 }
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+/* ---------- auth helpers (login ด้วยเลขพนักงานเหมือนเดิม, ข้างในเป็น Firebase Auth) ---------- */
+function authEmail_(empId){ return empId + '@wfdc.local'; }
+function authPass_(empId){ return 'wfdc-' + empId + '-x9k2'; } // deterministic — ผู้ใช้ไม่เห็น/ไม่ต้องพิมพ์
+
+async function firebaseLogin_(empId){
+  const email = authEmail_(empId), pass = authPass_(empId);
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
+  }catch(err){
+    if(err.code === 'auth/user-not-found'){
+      await auth.createUserWithEmailAndPassword(email, pass); // สมัครอัตโนมัติครั้งแรก (ยังไม่มีสิทธิ์จริงจนกว่าจะมี users/{empId} ที่ active=true)
+    }else if(err.code === 'auth/wrong-password'){
+      throw new Error('เข้าสู่ระบบไม่สำเร็จ');
+    }else{ throw err; }
+  }
+  const snap = await db.collection('users').doc(empId).get();
+  if(!snap.exists){ await auth.signOut(); throw new Error('ไม่พบสิทธิ์การใช้งานสำหรับเลขพนักงานนี้'); }
+  const u = snap.data();
+  if(u.active !== true){ await auth.signOut(); throw new Error('บัญชีนี้ถูกระงับการใช้งาน'); }
+  return { empId, name:u.name||'', department:u.department||'', position:u.position||'', role:u.role||'Warehouse Admin' };
+}
+
+/* ---------- config (Firestore) ---------- */
+async function loadConfigAll_(){
+  const snap = await db.collection('config').get();
+  const cfg = { category:[], zone:[], status:[], reason:[], role:[], setting:{} };
+  snap.forEach(doc=>{
+    if(doc.id==='setting') cfg.setting = doc.data();
+    else cfg[doc.id] = (doc.data().items||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  });
+  return cfg;
+}
+
+/* ---------- asset shape helper (ตรงกับ assetOut_ เดิมใน Code.gs) ---------- */
+function assetOut_(doc){
+  const a = doc.data();
+  const slots = (a.photos||['','','','']).slice(0,4);
+  while(slots.length<4) slots.push('');
+  return {
+    assetId: a.assetId || doc.id, wfdcId: a.wfdcId || doc.id, makroTag: a.makroTag||'',
+    name: a.name||'', category: a.category||'', zone: a.zone||'', owner: a.owner||'',
+    status: a.status||'', registerDate: a.registerDate||'',
+    photos: slots.filter(p=>p), photoSlots: slots,
+    note: a.note||'', updatedAt: a.updatedAt||'', createdAt: a.createdAt||''
+  };
+}
+
+/* ---------- Firestore-backed actions ---------- */
+const FIRESTORE_ACTIONS = {
+  login: async ({empId}) => {
+    const user = await firebaseLogin_(empId);
+    const config = await loadConfigAll_();
+    return { ok:true, user, config };
+  },
+  bootstrap: async () => ({ ok:true, config: await loadConfigAll_() }),
+
+  dashboard: async () => {
+    const snap = await db.collection('assets').get();
+    const byCat={}, byStatus={}, byZone={}; let makro=0, own=0, total=0;
+    snap.forEach(doc=>{
+      const a=doc.data(); total++;
+      const c=a.category||'(ไม่ระบุ)', s=a.status||'(ไม่ระบุ)', z=a.zone||'(ไม่ระบุ)';
+      byCat[c]=(byCat[c]||0)+1; byStatus[s]=(byStatus[s]||0)+1; byZone[z]=(byZone[z]||0)+1;
+      if(a.makroTag) makro++; else own++;
+    });
+    // ผลนับล่าสุด — ยังอ่านจาก session/count เดิมผ่าน legacy จนกว่าจะย้าย sessions เฟสถัดไป
+    let latestCount = null;
+    try{ const d=(await legacyApi('dashboard')).data; latestCount = d.latestCount; }catch(e){}
+    return { ok:true, data:{ total, byCategory:byCat, byStatus, byZone, makroVsOwn:{makro,own}, latestCount } };
+  },
+
+  listAssets: async ({filter={}}) => {
+    const snap = await db.collection('assets').get();
+    let rows = snap.docs.map(assetOut_);
+    if(filter.category) rows = rows.filter(a=>a.category===filter.category);
+    if(filter.zone)     rows = rows.filter(a=>a.zone===filter.zone);
+    if(filter.status)   rows = rows.filter(a=>a.status===filter.status);
+    if(filter.source==='makro') rows = rows.filter(a=>a.makroTag);
+    if(filter.source==='own')   rows = rows.filter(a=>!a.makroTag);
+    if(filter.q){
+      const q=filter.q.toLowerCase();
+      rows = rows.filter(a=>[a.wfdcId,a.makroTag,a.name].join(' ').toLowerCase().indexOf(q)>=0);
+    }
+    return { ok:true, assets: rows };
+  },
+
+  createAsset: async (req) => {
+    const wfdc = (req.wfdcId||'').trim();
+    if(!wfdc) throw new Error('ต้องกรอกเลขทรัพย์สิน WFDC');
+    const ref = db.collection('assets').doc(wfdc);
+    const exists = await ref.get();
+    if(exists.exists) throw new Error('เลขทรัพย์สิน WFDC นี้มีอยู่แล้ว: '+wfdc);
+    const ts = new Date().toISOString();
+    const assetId = 'AST-'+Date.now();
+    await ref.set({
+      assetId, wfdcId: wfdc, makroTag:req.makroTag||'', name:req.name||'', category:req.category||'',
+      zone:req.zone||'', owner:req.owner||'', status:req.status||'ใช้งานปกติ',
+      registerDate: (req.registerDate||ts.slice(0,10)),
+      photos:[req.photos&&req.photos[0]||'',req.photos&&req.photos[1]||'',req.photos&&req.photos[2]||'',req.photos&&req.photos[3]||''],
+      note:req.note||'', createdBy:USER.empId, createdAt:ts, updatedBy:USER.empId, updatedAt:ts
+    });
+    await ref.collection('logs').add({ timestamp:ts, user:USER.empId, action:'create', oldStatus:'', newStatus:req.status||'ใช้งานปกติ', reason:'', detail:'สร้างรายการใหม่' });
+    return { ok:true, assetId };
+  },
+
+  updateAsset: async (req) => {
+    const wfdc = ASSETS_BY_ASSETID_[req.assetId];
+    if(!wfdc) throw new Error('ไม่พบรายการทรัพย์สิน');
+    const ref = db.collection('assets').doc(wfdc);
+    const snap = await ref.get();
+    if(!snap.exists) throw new Error('ไม่พบรายการทรัพย์สิน');
+    const a = snap.data(), oldStatus = a.status, newStatus = (req.status!==undefined)?req.status:oldStatus;
+    if(oldStatus !== newStatus && !req.reason) throw new Error('การเปลี่ยนสถานะต้องระบุเหตุผล');
+    const ts = new Date().toISOString();
+    const patch = { updatedBy:USER.empId, updatedAt:ts };
+    ['makroTag','name','category','zone','owner','status','note'].forEach(k=>{ if(req[k]!==undefined) patch[k]=req[k]; });
+    if(req.photos) patch.photos = [req.photos[0]||'',req.photos[1]||'',req.photos[2]||'',req.photos[3]||''];
+    await ref.update(patch);
+    const action = oldStatus!==newStatus ? 'status-change' : 'edit';
+    await ref.collection('logs').add({ timestamp:ts, user:USER.empId, action, oldStatus, newStatus, reason:req.reason||'', detail:req.detail||(action==='edit'?'แก้ไขข้อมูล':'') });
+    return { ok:true };
+  },
+
+  getAssetLog: async ({assetId}) => {
+    const wfdc = ASSETS_BY_ASSETID_[assetId];
+    if(!wfdc) return { ok:true, logs:[] };
+    const snap = await db.collection('assets').doc(wfdc).collection('logs').orderBy('timestamp','desc').get();
+    return { ok:true, logs: snap.docs.map(d=>{ const l=d.data(); return { time:l.timestamp, user:l.user, action:l.action, oldStatus:l.oldStatus, newStatus:l.newStatus, reason:l.reason, detail:l.detail }; }) };
+  }
+};
+let ASSETS_BY_ASSETID_ = {}; // map assetId(เลข AST-...) -> wfdcId(doc id) — อัปเดตทุกครั้งที่ list assets
+
+/* ---------- api dispatcher ---------- */
+async function api(action, payload={}) {
+  const impl = FIRESTORE_ACTIONS[action];
+  const data = impl ? await impl(payload) : await legacyApi(action, payload);
+  if(action==='listAssets' && data.assets){
+    ASSETS_BY_ASSETID_ = {};
+    data.assets.forEach(a=>{ ASSETS_BY_ASSETID_[a.assetId] = a.wfdcId; });
+  }
+  return data;
+}
 function toast(msg, kind='') { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+kind; setTimeout(()=>t.className='toast',2600); }
 
 /* ---------- login ---------- */
@@ -477,7 +610,7 @@ async function doLogin(){
   }catch(e){ document.getElementById('loginMsg').textContent=e.message; }
   btn.disabled=false; btn.textContent='เข้าสู่ระบบ';
 }
-function logout(){ localStorage.removeItem('ac_emp'); location.reload(); }
+function logout(){ localStorage.removeItem('ac_emp'); auth.signOut().catch(()=>{}); location.reload(); }
 
 function startApp(){
   document.getElementById('login').style.display='none';
@@ -492,7 +625,19 @@ function startApp(){
 window.addEventListener('load', async ()=>{
   const saved = localStorage.getItem('ac_emp');
   if(saved && API_URL.indexOf('PASTE')<0){
-    try{ const d=await api('login',{empId:saved}); USER=d.user; CONFIG=d.config||CONFIG; startApp(); }catch(e){}
+    try{
+      const d=await api('login',{empId:saved});
+      USER=d.user; CONFIG=d.config||CONFIG; startApp();
+    }catch(e){
+      const msg = (e && e.message) ? e.message : '';
+      const offline = !navigator.onLine || /failed to fetch|network|load failed/i.test(msg);
+      if(!offline){
+        localStorage.removeItem('ac_emp');
+        document.getElementById('loginMsg').textContent = msg || 'กรุณาเข้าสู่ระบบใหม่';
+      }else{
+        document.getElementById('loginMsg').textContent = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองอีกครั้ง';
+      }
+    }
   }
 });
 
@@ -834,86 +979,10 @@ function bcSelectAll(on){
   renderBcList();
 }
 function updateBcCount(){ document.getElementById('bcCount').textContent=Object.keys(bcSelected).length; }
-/* ============ PRINTER (Web Serial / TSPL) ============ */
-let printerPort=null, printerWriter=null;
-async function connectPrinter(){
-  if(!('serial' in navigator)){
-    toast('เบราว์เซอร์นี้ไม่รองรับ Web Serial — ใช้ Chrome/Edge บนคอมเท่านั้น','err');
-    return;
-  }
-  try{
-    printerPort = await navigator.serial.requestPort();
-    await printerPort.open({ baudRate: 9600 });
-    printerWriter = printerPort.writable.getWriter();
-    document.getElementById('printerStatus').textContent='✅ เชื่อมต่อเครื่องพิมพ์แล้ว (USB)';
-    document.getElementById('printerBtn').textContent='🔌 เชื่อมต่อแล้ว';
-    toast('เชื่อมต่อเครื่องพิมพ์สำเร็จ','ok');
-  }catch(e){
-    toast('เชื่อมต่อไม่สำเร็จ: '+e.message,'err');
-    printerPort=null; printerWriter=null;
-  }
-}
-function tsplEsc(s){ return String(s||'').replace(/"/g,"'"); }
-function buildTSPL(items, opt){
-  // opt: {Win, Hin, gapMm, leftMm, density, speed}
-  const Wmm=(opt.Win*25.4).toFixed(1), Hmm=(opt.Hin*25.4).toFixed(1);
-  let cmd = '';
-  cmd += 'SIZE '+Wmm+' mm,'+Hmm+' mm\r\n';
-  cmd += 'GAP '+opt.gapMm+' mm,0 mm\r\n';
-  cmd += 'DIRECTION 1\r\n';
-  cmd += 'DENSITY '+opt.density+'\r\n';
-  cmd += 'SPEED '+opt.speed+'\r\n';
-  cmd += 'REFERENCE 0,0\r\n';
-  cmd += 'SET TEAR ON\r\n';
-  items.forEach(a=>{
-    cmd += 'CLS\r\n';
-    // บาร์โค้ดอยู่บน — barcode 128: BARCODE x,y,"128",height,human-readable,rotation,narrow,wide,"content"
-    cmd += 'BARCODE 15,8,"128",60,1,0,2,2,"'+tsplEsc(a.wfdcId)+'"\r\n';
-    // ชื่อทรัพย์สินด้านล่าง ตัวใหญ่ (font "4" = 24x32 dot, ใหญ่กว่าเดิม)
-    var name=tsplEsc(a.name||a.wfdcId).slice(0,14);
-    cmd += 'TEXT 10,130,"4",0,1,1,"'+name+'"\r\n';
-    cmd += 'PRINT 1,1\r\n';
-  });
-  return cmd;
-}
-async function sendTSPL(text){
-  const enc=new TextEncoder();
-  await printerWriter.write(enc.encode(text));
-}
-async function printBarcodes(){
+function printBarcodes(){
   const sel=ASSETS.filter(a=>bcSelected[a.wfdcId]);
   if(!sel.length){toast('เลือกอย่างน้อย 1 รายการ','err');return;}
-  const W=parseFloat(val('bcW'))||1.5, H=parseFloat(val('bcH'))||1,
-        gapMm=parseFloat(val('bcGap'))||0, leftMm=parseFloat(val('bcLeft'))||0,
-        cols=parseInt(val('bcCols'))||3, bh=parseInt(val('bcBarH'))||42,
-        density=parseInt(val('bcDensity'))||8, speed=parseInt(val('bcSpeed'))||4;
-
-  if(printerPort && printerWriter){
-    // พิมพ์ตรงผ่าน TSPL — แม่นกว่า ไม่ผ่าน browser layout
-    const btn=document.getElementById('printBtn'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> กำลังพิมพ์...';
-    try{
-      const tspl = buildTSPL(sel, { Win:W, Hin:H, gapMm, leftMm, density, speed });
-      await sendTSPL(tspl);
-      toast('ส่งคำสั่งพิมพ์ไปเครื่อง TSC แล้ว ('+sel.length+' ดวง)','ok');
-    }catch(e){
-      toast('พิมพ์ผ่าน USB ไม่สำเร็จ: '+e.message+' — ลองพิมพ์ผ่าน browser แทน','err');
-    }
-    btn.disabled=false; btn.textContent='🖨️ พิมพ์';
-    return;
-  }
-
-  // fallback: พิมพ์ผ่าน browser print (เดิม)
-  const gapIn=gapMm/25.4, leftIn=leftMm/25.4, rightIn=leftIn; // ขอบขวา = ขอบซ้าย ตามสเปคเครื่อง
-  const pageW=(leftIn + rightIn + W*cols + gapIn*(cols>1?cols-1:0)).toFixed(3);
-  let ps=document.getElementById('printStyle'); if(ps)ps.remove();
-  ps=document.createElement('style'); ps.id='printStyle';
-  ps.textContent='@media print{@page{size:'+pageW+'in auto;margin:0}'+
-    '.label-sheet{padding-left:'+leftIn.toFixed(3)+'in}'+
-    '.label{width:'+W+'in;height:'+H+'in;margin-right:'+gapIn.toFixed(3)+'in}'+
-    '.label:nth-child('+cols+'n){margin-right:0}}';
-  document.head.appendChild(ps);
-  const sheet=document.getElementById('labelSheet');
-  sheet.innerHTML=''; sheet.style.width=pageW+'in'; sheet.style.paddingLeft=leftIn+'in';
+  const sheet=document.getElementById('labelSheet'); sheet.innerHTML='';
   sel.forEach(a=>{
     const div=document.createElement('div'); div.className='label';
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -921,10 +990,9 @@ async function printBarcodes(){
     const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.name||a.wfdcId;
     div.appendChild(nm);
     sheet.appendChild(div);
-    JsBarcode(svg, a.wfdcId, { format:'CODE128', width:1.6, height:bh, fontSize:11,
-      margin:0, textMargin:1, displayValue:true });
+    JsBarcode(svg, a.wfdcId, { format:'CODE128', width:1.4, height:34, fontSize:10, margin:0, displayValue:true });
   });
-  setTimeout(()=>window.print(),350);
+  setTimeout(()=>window.print(),300);
 }
 
 /* ============ EXPORT ============ */
@@ -954,52 +1022,26 @@ async function exportExcel(){
     msg.textContent='ดาวน์โหลด Excel แล้ว ('+assets.length+' รายการ)';
   }catch(e){msg.textContent='';toast(e.message,'err');}
 }
-let THAI_FONT_B64=null;
-function abToBase64(buf){
-  let bin=''; const bytes=new Uint8Array(buf), chunk=0x8000;
-  for(let i=0;i<bytes.length;i+=chunk){ bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk)); }
-  return btoa(bin);
-}
-async function ensureThaiFont(doc){
-  if(!THAI_FONT_B64){
-    const r=await fetch('https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Regular.ttf');
-    THAI_FONT_B64=abToBase64(await r.arrayBuffer());
-  }
-  doc.addFileToVFS('Sarabun-Regular.ttf', THAI_FONT_B64);
-  doc.addFont('Sarabun-Regular.ttf','Sarabun','normal');
-  doc.setFont('Sarabun','normal');
-}
 async function exportPDF(){
-  const msg=document.getElementById('exMsg'); msg.textContent='กำลังเตรียมฟอนต์ไทย...';
+  const msg=document.getElementById('exMsg'); msg.textContent='กำลังสร้าง PDF (โหลดรูป)...';
   try{
     const assets=(await api('listAssets',{filter:exFilter()})).assets;
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    try{ await ensureThaiFont(doc); }catch(fe){ toast('โหลดฟอนต์ไทยไม่สำเร็จ ภาษาไทยอาจเพี้ยน','err'); }
     doc.setFontSize(14); doc.text('Asset Checker (WFDC) — รายการทรัพย์สิน',14,14);
     doc.setFontSize(9); doc.text('วันที่ออก: '+today()+' · จำนวน '+assets.length+' รายการ',14,20);
-    msg.textContent='กำลังสร้าง PDF (โหลดรูป)...';
 
-    // preload รูปแรกของแต่ละรายการเป็น base64 แบบขนาน (เร็วกว่าโหลดทีละใบมาก)
+    // preload รูปแรกของแต่ละรายการเป็น base64 (ผ่าน backend เลี่ยง CORS)
     const imgMap={};
-    const jobs=assets.map(a=>({ id:a.assetId, url:(a.photoSlots||[]).find(x=>x) })).filter(j=>j.url);
-    let done=0;
-    const CONC=5; // โหลดพร้อมกันทีละ 5 รูป
-    async function worker(queue){
-      while(queue.length){
-        const j=queue.shift();
-        try{ const p=await api('photoData',{url:j.url}); imgMap[j.id]='data:'+p.mime+';base64,'+p.dataBase64; }catch(e){}
-        done++; msg.textContent='กำลังโหลดรูป '+done+'/'+jobs.length+'...';
-      }
+    for(const a of assets){
+      const u=(a.photoSlots||[]).find(x=>x);
+      if(u){ try{ const p=await api('photoData',{url:u}); imgMap[a.assetId]='data:'+p.mime+';base64,'+p.dataBase64; }catch(e){} }
     }
-    const queue=jobs.slice();
-    await Promise.all(Array.from({length:Math.min(CONC,jobs.length||1)},()=>worker(queue)));
-    msg.textContent='กำลังสร้างไฟล์ PDF...';
     const body=assets.map(a=>[a.wfdcId,a.makroTag||'-',a.name,a.category||'-',a.zone||'-',a.status,'']);
     doc.autoTable({
       startY:24, head:[['WFDC ID','Makro','ชื่อ','หมวด','โซน','สถานะ','รูป']],
-      body, styles:{font:'Sarabun',fontStyle:'normal',fontSize:8,cellPadding:2,minCellHeight:20,valign:'middle'},
-      headStyles:{font:'Sarabun',fontStyle:'normal',fillColor:[13,42,82]}, columnStyles:{6:{cellWidth:26}},
+      body, styles:{fontSize:8,cellPadding:2,minCellHeight:20,valign:'middle'},
+      headStyles:{fillColor:[13,42,82]}, columnStyles:{6:{cellWidth:26}},
       didDrawCell:function(data){
         if(data.section==='body' && data.column.index===6){
           const a=assets[data.row.index]; const img=imgMap[a.assetId];
