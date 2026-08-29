@@ -456,6 +456,7 @@ function authEmail_(empId){ return empId + '@wfdc.local'; }
 function authPass_(empId){ return 'wfdc-' + empId + '-x9k2'; } // deterministic — ผู้ใช้ไม่เห็น/ไม่ต้องพิมพ์
 
 async function firebaseLogin_(empId){
+  empId = String(empId).trim().toUpperCase(); // Firebase Auth บังคับ email เป็นตัวพิมพ์เล็กเสมอ ต้อง normalize ฝั่งนี้ให้ตรงกับ Firestore doc ID ที่เป็นตัวพิมพ์ใหญ่
   const email = authEmail_(empId), pass = authPass_(empId);
   try{
     await auth.signInWithEmailAndPassword(email, pass);
@@ -611,11 +612,7 @@ async function doLogin(){
     USER=d.user; CONFIG=d.config||CONFIG;
     localStorage.setItem('ac_emp', empId);
     startApp();
-  }catch(e){
-    const dbg = 'URL='+location.protocol+'//'+location.host+' | authUser='+(auth.currentUser?auth.currentUser.email:'null')+' | err='+e.code+': '+e.message;
-    console.error('LOGIN DEBUG:', dbg);
-    document.getElementById('loginMsg').textContent = dbg;
-  }
+  }catch(e){ document.getElementById('loginMsg').textContent=e.message; }
   btn.disabled=false; btn.textContent='เข้าสู่ระบบ';
 }
 function logout(){ localStorage.removeItem('ac_emp'); auth.signOut().catch(()=>{}); location.reload(); }
