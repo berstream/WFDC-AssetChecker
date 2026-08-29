@@ -469,6 +469,7 @@ async function firebaseLogin_(empId){
       }
     }else{ throw err; }
   }
+  await auth.currentUser.getIdToken(true); // บังคับรีเฟรช token กัน race condition ที่ Firestore อ่านก่อน auth state sync เสร็จ
   const snap = await db.collection('users').doc(empId).get();
   if(!snap.exists){ await auth.signOut(); throw new Error('ไม่พบสิทธิ์การใช้งานสำหรับเลขพนักงานนี้'); }
   const u = snap.data();
