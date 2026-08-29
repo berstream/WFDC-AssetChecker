@@ -460,10 +460,13 @@ async function firebaseLogin_(empId){
   try{
     await auth.signInWithEmailAndPassword(email, pass);
   }catch(err){
-    if(err.code === 'auth/user-not-found'){
-      await auth.createUserWithEmailAndPassword(email, pass); // สมัครอัตโนมัติครั้งแรก (ยังไม่มีสิทธิ์จริงจนกว่าจะมี users/{empId} ที่ active=true)
-    }else if(err.code === 'auth/wrong-password'){
-      throw new Error('เข้าสู่ระบบไม่สำเร็จ');
+    if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential'){
+      try{
+        await auth.createUserWithEmailAndPassword(email, pass); // สมัครอัตโนมัติครั้งแรก (ยังไม่มีสิทธิ์จริงจนกว่าจะมี users/{empId} ที่ active=true)
+      }catch(err2){
+        if(err2.code === 'auth/email-already-in-use') throw new Error('เข้าสู่ระบบไม่สำเร็จ');
+        throw err2;
+      }
     }else{ throw err; }
   }
   const snap = await db.collection('users').doc(empId).get();
