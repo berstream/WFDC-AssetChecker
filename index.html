@@ -7,6 +7,7 @@
 
 <!-- CDN libs -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -154,14 +155,14 @@ td.wrap{white-space:normal}
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
   #printArea{display:block;position:absolute;left:0;top:0;width:100%}
-  .label-sheet{display:flex;flex-wrap:wrap}
-  /* label 4in กว้าง, 3 ดวง/แถว => ~1.33in ต่อดวง, สูง 1in ; ปรับได้ที่นี่ */
-  .label{width:1.33in;height:1in;box-sizing:border-box;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;padding:2px;overflow:hidden;page-break-inside:avoid}
-  .label svg{max-width:100%;height:auto}
-  .label .nm{font-size:7pt;font-weight:700;text-align:center;line-height:1;margin-top:1px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  @page{size:4in auto;margin:0}
+  .label-sheet{display:flex;flex-wrap:wrap;gap:3mm 2mm;padding:0 2mm}
+  /* สเปกจริง TSC MB241: 32mm กว้าง x 25.4mm สูง, 3 ดวง/แถว, gap แนวนอน 2mm แนวตั้ง 3mm, ขอบซ้ายขวา 2mm, กระดาษกว้างรวม 106mm */
+  .label{width:32mm;height:25.4mm;box-sizing:border-box;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:1mm;overflow:hidden;page-break-inside:avoid}
+  .label canvas{width:14mm;height:14mm}
+  .label .nm{font-size:7pt;font-weight:700;text-align:center;line-height:1.1;margin-top:0.5mm;
+    white-space:normal;overflow:hidden;max-height:8mm;max-width:100%;word-break:break-word}
+  @page{size:106mm auto;margin:0}
 }
 .seg{display:inline-flex;border:1px solid #cfd8e6;border-radius:10px;overflow:hidden}
 .seg button{background:#fff;border:none;padding:8px 14px;font-size:13px;font-weight:600;color:#41546e}
@@ -294,12 +295,17 @@ td.wrap{white-space:normal}
 
       <!-- ===== BARCODE ===== -->
       <section id="page-barcode" class="page">
-        <div class="page-head"><h2>พิมพ์บาร์โค้ด</h2></div>
+        <div class="page-head"><h2>พิมพ์ QR Code</h2></div>
         <div class="card">
-          <div class="muted" style="margin-bottom:10px">Code128 + ชื่อใต้บาร์โค้ด · Label 4×1 นิ้ว 3 ดวง/แถว (TSC MB241)</div>
+          <div class="muted" style="margin-bottom:10px">QR Code + ชื่อใต้ QR · Label 32×25.4mm 3 ดวง/แถว (TSC MB241)</div>
+          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:10px">
+            <div><label class="f">หมวดหมู่</label><select id="bcCat" class="inp" onchange="renderBcList()"></select></div>
+            <div><label class="f">โซน</label><select id="bcZone" class="inp" onchange="renderBcList()"></select></div>
+            <div><label class="f">สถานะ</label><select id="bcStatus" class="inp" onchange="renderBcList()"></select></div>
+          </div>
           <div class="row" style="margin-bottom:10px">
             <input id="bcSearch" class="inp" style="flex:1;min-width:160px" placeholder="ค้นหาเพื่อกรอง" oninput="renderBcList()">
-            <button class="btn ghost sm" onclick="bcSelectAll(true)">เลือกทั้งหมด</button>
+            <button class="btn ghost sm" onclick="bcSelectAll(true)">เลือกทั้งหมด (ตามตัวกรอง)</button>
             <button class="btn ghost sm" onclick="bcSelectAll(false)">ล้าง</button>
           </div>
           <div class="bc-list" id="bcList"></div>
@@ -1111,11 +1117,22 @@ async function doClose(){
 /* ============ BARCODE ============ */
 let bcSelected={};
 async function loadBarcodePage(){
+  document.getElementById('bcCat').innerHTML=opts(CONFIG.category,true,'ทุกหมวด');
+  document.getElementById('bcZone').innerHTML=opts(CONFIG.zone,true,'ทุกโซน');
+  document.getElementById('bcStatus').innerHTML=opts(CONFIG.status,true,'ทุกสถานะ');
   try{ ASSETS=(await api('listAssets',{})).assets; renderBcList(); }catch(e){toast(e.message,'err');}
 }
-function renderBcList(){
+function bcFilterMatch_(a){
   const q=val('bcSearch').toLowerCase();
-  const list=ASSETS.filter(a=>!q || (a.wfdcId+' '+a.name).toLowerCase().indexOf(q)>=0);
+  const cat=val('bcCat'), zone=val('bcZone'), status=val('bcStatus');
+  if(q && (a.wfdcId+' '+a.name).toLowerCase().indexOf(q)<0) return false;
+  if(cat && a.category!==cat) return false;
+  if(zone && a.zone!==zone) return false;
+  if(status && a.status!==status) return false;
+  return true;
+}
+function renderBcList(){
+  const list=ASSETS.filter(bcFilterMatch_);
   const el=document.getElementById('bcList');
   el.innerHTML = list.length?list.map(a=>`<div class="bc-row">
     <input type="checkbox" ${bcSelected[a.wfdcId]?'checked':''} onchange="bcToggle('${esc(a.wfdcId)}',this.checked)">
@@ -1125,8 +1142,7 @@ function renderBcList(){
 }
 function bcToggle(w,on){ if(on)bcSelected[w]=true; else delete bcSelected[w]; updateBcCount(); }
 function bcSelectAll(on){
-  const q=val('bcSearch').toLowerCase();
-  ASSETS.filter(a=>!q||(a.wfdcId+' '+a.name).toLowerCase().indexOf(q)>=0).forEach(a=>{ if(on)bcSelected[a.wfdcId]=true; else delete bcSelected[a.wfdcId]; });
+  ASSETS.filter(bcFilterMatch_).forEach(a=>{ if(on)bcSelected[a.wfdcId]=true; else delete bcSelected[a.wfdcId]; });
   renderBcList();
 }
 function updateBcCount(){ document.getElementById('bcCount').textContent=Object.keys(bcSelected).length; }
@@ -1136,14 +1152,14 @@ function printBarcodes(){
   const sheet=document.getElementById('labelSheet'); sheet.innerHTML='';
   sel.forEach(a=>{
     const div=document.createElement('div'); div.className='label';
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    div.appendChild(svg);
+    const canvas=document.createElement('canvas');
+    div.appendChild(canvas);
     const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.name||a.wfdcId;
     div.appendChild(nm);
     sheet.appendChild(div);
-    JsBarcode(svg, a.wfdcId, { format:'CODE128', width:1.4, height:34, fontSize:10, margin:0, displayValue:true });
+    QRCode.toCanvas(canvas, a.wfdcId, { width:120, margin:0 }, function(err){ if(err) console.error('QR error:',err); });
   });
-  setTimeout(()=>window.print(),300);
+  setTimeout(()=>window.print(),400);
 }
 
 /* ============ EXPORT ============ */
