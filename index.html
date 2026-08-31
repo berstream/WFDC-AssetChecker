@@ -301,7 +301,7 @@ td.wrap{white-space:normal}
       <section id="page-barcode" class="page">
         <div class="page-head"><h2>พิมพ์ QR Code</h2></div>
         <div class="card">
-          <div class="muted" style="margin-bottom:10px">QR Code + ชื่อใต้ QR · Label 32×25.4mm 3 ดวง/แถว (TSC MB241)</div>
+          <div class="muted" style="margin-bottom:10px">QR Code + ชื่อใต้ QR · Label 32×25.4mm 3 ดวง/แถว (TSC MB241) · <b>v2 พิมพ์แยกหน้าต่าง</b></div>
           <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:10px">
             <div><label class="f">หมวดหมู่</label><select id="bcCat" class="inp" onchange="renderBcList()"></select></div>
             <div><label class="f">โซน</label><select id="bcZone" class="inp" onchange="renderBcList()"></select></div>
@@ -594,6 +594,25 @@ const FIRESTORE_ACTIONS = {
     if(!wfdc) return { ok:true, logs:[] };
     const snap = await db.collection('assets').doc(wfdc).collection('logs').orderBy('timestamp','desc').get();
     return { ok:true, logs: snap.docs.map(d=>{ const l=d.data(); return { time:l.timestamp, user:l.user, action:l.action, oldStatus:l.oldStatus, newStatus:l.newStatus, reason:l.reason, detail:l.detail }; }) };
+  },
+
+  deleteAsset: async ({assetId, wfdcId}) => {
+    const wfdc = wfdcId || ASSETS_BY_ASSETID_[assetId];
+    if(!wfdc) throw new Error('ไม่พบรายการทรัพย์สิน');
+    const ref = db.collection('assets').doc(wfdc);
+    const snap = await ref.get();
+    if(!snap.exists) throw new Error('ไม่พบรายการทรัพย์สิน');
+    // 1) ลบรูปใน Storage (ทำก่อน — ถ้าพลาดยัง rollback ได้เพราะ doc ยังอยู่)
+    const photos = (snap.data().photos||[]).filter(p=>p && p.indexOf('assets/')===0);
+    for(const path of photos){ try{ await storage.ref().child(path).delete(); }catch(e){ /* รูปหายไปแล้วก็ข้าม */ } }
+    // 2) ลบ sub-collection logs (Firestore ไม่ลบ sub-collection อัตโนมัติ ต้องลบเอง)
+    const logs = await ref.collection('logs').get();
+    const batch = db.batch();
+    logs.docs.forEach(d=>batch.delete(d.ref));
+    await batch.commit();
+    // 3) ลบตัว document
+    await ref.delete();
+    return { ok:true };
   },
 
   /* ---- sessions ---- */
@@ -898,12 +917,22 @@ async function loadAssets(){
       tr.innerHTML=`<td><b>${esc(a.wfdcId)}</b></td><td>${esc(a.makroTag||'-')}</td>
         <td class="wrap">${esc(a.name)}</td><td>${esc(a.category||'-')}</td><td>${esc(a.zone||'-')}</td>
         <td>${statusChip(a.status)}</td><td>${a.photos.length?('📷 '+a.photos.length):'-'}</td>
-        <td><button class="btn ghost sm" onclick='openAsset(${JSON.stringify(a.assetId)})'>แก้ไข</button></td>`;
+        <td><button class="btn ghost sm" onclick='openAsset(${JSON.stringify(a.assetId)})'>แก้ไข</button>${USER.role==='admin'?`<button class="btn ghost sm" style="color:var(--danger)" onclick='deleteAsset(${JSON.stringify(a.assetId)},${JSON.stringify(a.wfdcId)},${JSON.stringify(a.name)})'>ลบ</button>`:''}</td>`;
       tb.appendChild(tr);
     });
   }catch(e){toast(e.message,'err');}
 }
 function val(id){return document.getElementById(id).value.trim();}
+
+async function deleteAsset(assetId, wfdcId, name){
+  if(USER.role!=='admin'){ toast('เฉพาะผู้ดูแลระบบเท่านั้น','err'); return; }
+  if(!confirm('ลบทรัพย์สิน "'+(name||wfdcId)+'" (WFDC: '+wfdcId+') ถาวร?\nรวมรูปและประวัติทั้งหมด — กู้คืนไม่ได้'))return;
+  try{
+    await api('deleteAsset',{assetId, wfdcId});
+    toast('ลบทรัพย์สินแล้ว','ok');
+    loadAssets();
+  }catch(e){toast(e.message,'err');}
+}
 
 /* ---- asset modal ---- */
 let editing=null;
@@ -1153,18 +1182,37 @@ function updateBcCount(){ document.getElementById('bcCount').textContent=Object.
 function printBarcodes(){
   const sel=ASSETS.filter(a=>bcSelected[a.wfdcId]);
   if(!sel.length){toast('เลือกอย่างน้อย 1 รายการ','err');return;}
-  const sheet=document.getElementById('labelSheet'); sheet.innerHTML='';
-  sel.forEach(a=>{
-    const div=document.createElement('div'); div.className='label';
-    const qrbox=document.createElement('div'); qrbox.className='qrbox';
-    div.appendChild(qrbox);
-    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.name||a.wfdcId;
-    div.appendChild(nm);
-    sheet.appendChild(div);
-    new QRCode(qrbox, { text:a.wfdcId, width:200, height:200, correctLevel:QRCode.CorrectLevel.M });
+  const tmp=document.createElement('div'); tmp.style.position='absolute'; tmp.style.left='-99999px'; document.body.appendChild(tmp);
+  const jobs=sel.map(a=>{
+    const box=document.createElement('div'); tmp.appendChild(box);
+    new QRCode(box,{ text:a.wfdcId, width:220, height:220, correctLevel:QRCode.CorrectLevel.M });
+    return { a, box };
   });
-  // รอ QR วาดเสร็จจริง (qrcodejs วาดแบบ async) ก่อนสั่งพิมพ์ — กันดวงว่างเปล่า
-  waitQRReady_(sheet, sel.length).then(()=>{ setTimeout(()=>window.print(),150); });
+  waitQRReady_(tmp, sel.length).then(()=>{
+    const cells = jobs.map(({a,box})=>{
+      const el = box.querySelector('img,canvas');
+      const src = el.tagName==='CANVAS' ? el.toDataURL('image/png') : el.src;
+      const nm = (a.name||a.wfdcId).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      return `<div class="label"><img class="qr" src="${src}"><div class="nm">${nm}</div></div>`;
+    }).join('');
+    document.body.removeChild(tmp);
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR Labels</title><style>
+      @page{size:106mm auto;margin:0}
+      *{margin:0;padding:0;box-sizing:border-box}
+      html,body{background:#fff}
+      .sheet{display:flex;flex-wrap:wrap;gap:3mm 2mm;padding:0 2mm}
+      .label{width:32mm;height:25.4mm;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;gap:0.5mm;padding:1mm;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
+      .label .qr{width:17mm;height:17mm;display:block}
+      .label .nm{font-size:8pt;font-weight:900;text-align:center;line-height:1;color:#000;
+        font-family:'Sarabun','Tahoma',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    </style></head><body><div class="sheet">${cells}</div>
+    <script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script>
+    </body></html>`;
+    const w = window.open('', '_blank', 'width=500,height=700');
+    if(!w){ toast('เบราว์เซอร์บล็อก popup — อนุญาต popup แล้วลองใหม่','err'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  });
 }
 function waitQRReady_(sheet, expected, tries){
   tries = tries||0;
