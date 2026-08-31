@@ -98,6 +98,21 @@ textarea.inp{min-height:70px;resize:vertical}
 .toast.show{opacity:1}
 .toast.ok{background:#137a44}.toast.err{background:#b21b13}
 
+/* Lightbox พรีวิวรูป */
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;
+  align-items:center;justify-content:center}
+#lightbox.show{display:flex}
+#lightbox img{max-width:92vw;max-height:88vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.lb-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.15);color:#fff;border:none;
+  width:44px;height:44px;border-radius:50%;font-size:26px;cursor:pointer;line-height:1}
+.lb-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;
+  border:none;width:48px;height:64px;border-radius:10px;font-size:34px;cursor:pointer}
+.lb-prev{left:16px}.lb-next{right:16px}
+.lb-count{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;font-size:15px;
+  background:rgba(0,0,0,.4);padding:6px 14px;border-radius:20px}
+.photo-cell{cursor:pointer;color:var(--navy);font-weight:600;user-select:none}
+.photo-slot img{cursor:zoom-in}
+
 /* table */
 .tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
 table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;min-width:640px}
@@ -466,6 +481,15 @@ td.wrap{white-space:normal}
 <div id="printArea"><div class="label-sheet" id="labelSheet"></div></div>
 <div class="toast" id="toast"></div>
 
+<!-- Lightbox พรีวิวรูป -->
+<div id="lightbox" onclick="lbClose(event)">
+  <button class="lb-close" onclick="lbClose(event,true)">×</button>
+  <button class="lb-nav lb-prev" onclick="lbNav(event,-1)">‹</button>
+  <img id="lbImg" src="" alt="">
+  <button class="lb-nav lb-next" onclick="lbNav(event,1)">›</button>
+  <div id="lbCount" class="lb-count"></div>
+</div>
+
 <script>
 /* ============================================================
    CONFIG — legacy GAS endpoint ยังใช้เป็น fallback สำหรับ action
@@ -832,6 +856,30 @@ async function api(action, payload={}) {
 }
 function toast(msg, kind='') { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+kind; setTimeout(()=>t.className='toast',2600); }
 
+/* ---------- lightbox พรีวิวรูป ---------- */
+let lbImgs=[], lbIdx=0;
+function photoPreview(urls, start){
+  lbImgs=(urls||[]).filter(u=>u); lbIdx=start||0;
+  if(!lbImgs.length){ toast('ไม่มีรูป','err'); return; }
+  lbShow_();
+  document.getElementById('lightbox').classList.add('show');
+}
+function lbShow_(){
+  document.getElementById('lbImg').src=lbImgs[lbIdx];
+  const multi=lbImgs.length>1;
+  document.querySelector('.lb-prev').style.display=multi?'block':'none';
+  document.querySelector('.lb-next').style.display=multi?'block':'none';
+  document.getElementById('lbCount').textContent=multi?(lbIdx+1)+' / '+lbImgs.length:'';
+}
+function lbNav(e,dir){ e.stopPropagation(); lbIdx=(lbIdx+dir+lbImgs.length)%lbImgs.length; lbShow_(); }
+function lbClose(e,force){ if(force || e.target.id==='lightbox'){ document.getElementById('lightbox').classList.remove('show'); } }
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lightbox').classList.contains('show'))return;
+  if(e.key==='Escape')document.getElementById('lightbox').classList.remove('show');
+  else if(e.key==='ArrowLeft'&&lbImgs.length>1){lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length;lbShow_();}
+  else if(e.key==='ArrowRight'&&lbImgs.length>1){lbIdx=(lbIdx+1)%lbImgs.length;lbShow_();}
+});
+
 /* ---------- login ---------- */
 document.getElementById('loginBtn').onclick = doLogin;
 document.getElementById('empId').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -975,7 +1023,7 @@ async function loadAssets(){
       const tr=document.createElement('tr');
       tr.innerHTML=`<td><b>${esc(a.wfdcId)}</b></td><td>${esc(a.makroTag||'-')}</td>
         <td class="wrap">${esc(a.name)}</td><td>${esc(a.category||'-')}</td><td>${esc(a.zone||'-')}</td>
-        <td>${statusChip(a.status)}</td><td>${a.photos.length?('📷 '+a.photos.length):'-'}</td>
+        <td>${statusChip(a.status)}</td><td>${a.photos.length?`<span class="photo-cell" onclick='photoPreview(${JSON.stringify(a.photos)},0)'>📷 ${a.photos.length}</span>`:'-'}</td>
         <td><button class="btn ghost sm" onclick='openAsset(${JSON.stringify(a.assetId)})'>แก้ไข</button>${USER.role==='admin'?`<button class="btn ghost sm" style="color:var(--danger)" onclick='deleteAsset(${JSON.stringify(a.assetId)},${JSON.stringify(a.wfdcId)},${JSON.stringify(a.name)})'>ลบ</button>`:''}</td>`;
       tb.appendChild(tr);
     });
@@ -1033,17 +1081,21 @@ async function loadAssetLog(assetId){
 /* ---- photos ---- */
 function renderPhotos(){
   const g=document.getElementById('photoGrid'); g.innerHTML='';
+  const filled=photoState.filter(u=>u);
   for(let i=0;i<MAX_PHOTOS;i++){
     const url=photoState[i];
     const slot=document.createElement('label');
     slot.className='photo-slot'+(url?' filled':'');
-    slot.innerHTML = url
-      ? `<img src="${esc(url)}"><button class="rm" onclick="removePhoto(event,${i})">×</button>`
-      : `<div class="ph-ic">📷<br><small>ถ่าย/เลือก</small></div>`;
-    const inp=document.createElement('input');
-    inp.type='file'; inp.accept='image/*'; inp.capture='environment';
-    inp.onchange=e=>handlePhoto(e,i);
-    slot.appendChild(inp);
+    if(url){
+      const startIdx=filled.indexOf(url);
+      slot.innerHTML=`<img src="${esc(url)}" onclick='event.preventDefault();event.stopPropagation();photoPreview(${JSON.stringify(filled)},${startIdx})'><button class="rm" onclick="removePhoto(event,${i})">×</button>`;
+    }else{
+      slot.innerHTML=`<div class="ph-ic">📷<br><small>ถ่าย/เลือก</small></div>`;
+      const inp=document.createElement('input');
+      inp.type='file'; inp.accept='image/*'; inp.capture='environment';
+      inp.onchange=e=>handlePhoto(e,i);
+      slot.appendChild(inp);
+    }
     g.appendChild(slot);
   }
 }
