@@ -152,18 +152,20 @@ td.wrap{white-space:normal}
 .bc-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
 #printArea{display:none}
 @media print{
-  html,body{margin:0;padding:0;height:auto}
-  body *{visibility:hidden}
-  #printArea,#printArea *{visibility:visible}
-  #printArea{display:block;position:static;width:106mm;margin:0}
+  html,body{margin:0;padding:0;height:auto;background:#fff}
+  /* ซ่อนทุกอย่างแบบไม่กินพื้นที่ (display:none) แล้วค่อยโชว์เฉพาะ printArea */
+  body > *{display:none !important}
+  #printArea{display:block !important;position:static;width:106mm;margin:0}
+  #printArea *{visibility:visible}
   .label-sheet{display:flex;flex-wrap:wrap;gap:3mm 2mm;padding:0 2mm;margin:0}
   /* สเปกจริง TSC MB241: 32mm กว้าง x 25.4mm สูง, 3 ดวง/แถว, gap แนวนอน 2mm แนวตั้ง 3mm, ขอบซ้ายขวา 2mm, กระดาษกว้างรวม 106mm */
-  .label{width:32mm;height:25.4mm;box-sizing:border-box;display:flex;flex-direction:row;
-    align-items:center;gap:1mm;padding:1.2mm;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
-  .label .qrbox{width:22mm;height:22mm;flex:0 0 22mm;line-height:0}
+  .label{width:32mm;height:25.4mm;box-sizing:border-box;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:0.5mm;padding:1mm;overflow:hidden;page-break-inside:avoid;break-inside:avoid}
+  .label .qrbox{width:17mm;height:17mm;flex:0 0 17mm;line-height:0}
   .label .qrbox canvas,.label .qrbox img{width:100%;height:100%;display:block}
-  .label .nm{flex:1;font-size:9pt;font-weight:800;text-align:center;line-height:1.05;
-    white-space:normal;overflow:hidden;max-height:24mm;word-break:break-word}
+  .label .nm{font-size:8pt;font-weight:900;text-align:center;line-height:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+    -webkit-text-stroke:0.2px black;color:#000}
   @page{size:106mm auto;margin:0}
 }
 .seg{display:inline-flex;border:1px solid #cfd8e6;border-radius:10px;overflow:hidden}
