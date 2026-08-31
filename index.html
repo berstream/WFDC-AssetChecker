@@ -209,6 +209,7 @@ td.wrap{white-space:normal}
       <a data-page="dashboard" class="active" onclick="go('dashboard')"><span class="ic">📊</span> แดชบอร์ด</a>
       <a data-page="assets" onclick="go('assets')"><span class="ic">📦</span> ทะเบียนทรัพย์สิน</a>
       <a data-page="count" onclick="go('count')"><span class="ic">🔍</span> นับสต็อก</a>
+      <a data-page="countdash" onclick="go('countdash')"><span class="ic">📈</span> Dashboard นับสต็อก</a>
       <a data-page="barcode" onclick="go('barcode')"><span class="ic">🏷️</span> พิมพ์บาร์โค้ด</a>
       <a data-page="export" onclick="go('export')"><span class="ic">📤</span> Export</a>
       <a data-page="settings" class="admin-only" onclick="go('settings')"><span class="ic">⚙️</span> ตั้งค่า</a>
@@ -245,6 +246,47 @@ td.wrap{white-space:normal}
           <th>WFDC ID</th><th>Makro</th><th>ชื่อ</th><th>หมวด</th><th>โซน</th><th>สถานะ</th><th>รูป</th><th></th>
         </tr></thead><tbody></tbody></table></div>
         <div id="assetEmpty" class="empty" style="display:none">ยังไม่มีข้อมูล</div>
+      </section>
+
+      <!-- ===== COUNT DASHBOARD ===== -->
+      <section id="page-countdash" class="page">
+        <div class="page-head"><h2>Dashboard การนับสต็อก</h2><div class="spacer" style="flex:1"></div>
+          <select id="cdSession" class="inp" style="width:auto" onchange="cdSelectSession()"></select>
+        </div>
+        <div id="cdEmpty" class="empty" style="display:none">ยังไม่มีรอบนับ</div>
+        <div id="cdBody" style="display:none">
+          <div class="card">
+            <div class="row" style="justify-content:space-between;flex-wrap:wrap">
+              <div><b id="cdTitle" style="font-size:16px"></b><div class="muted" id="cdSub"></div></div>
+              <div class="row" style="gap:8px">
+                <button class="btn ghost sm" onclick="exportCountPDF()">📄 Export PDF</button>
+                <button class="btn ghost sm" onclick="exportCountExcel()">📊 Export Excel</button>
+              </div>
+            </div>
+            <div id="cdExMsg" class="muted" style="margin-top:8px"></div>
+          </div>
+
+          <!-- progress -->
+          <div class="card">
+            <div class="row" style="justify-content:space-between"><b>ความคืบหน้า (real-time)</b>
+              <span id="cdProgTxt" class="muted"></span></div>
+            <div style="background:#e8edf5;border-radius:99px;height:16px;overflow:hidden;margin:10px 0">
+              <div id="cdProgBar" style="height:100%;width:0;background:var(--ok);transition:width .3s;border-radius:99px"></div>
+            </div>
+            <div class="row" style="gap:20px;flex-wrap:wrap;margin-top:6px">
+              <div><b id="cdFound" style="color:var(--ok)">0</b> <span class="muted">พบ</span> <span id="cdFoundPct" class="muted"></span></div>
+              <div><b id="cdMissing" style="color:var(--danger)">0</b> <span class="muted">ขาด</span> <span id="cdMissingPct" class="muted"></span></div>
+              <div><b id="cdExtra" style="color:var(--warn)">0</b> <span class="muted">เกิน</span> <span id="cdExtraPct" class="muted"></span></div>
+              <div><b id="cdTotal">0</b> <span class="muted">ทั้งหมด</span></div>
+            </div>
+          </div>
+
+          <!-- compare + chart -->
+          <div class="charts">
+            <div class="chart-card"><h3>เทียบรอบก่อน</h3><div id="cdCompare"></div></div>
+            <div class="chart-card"><h3>%ความแม่นยำ ย้อนหลัง</h3><canvas id="cdChart"></canvas></div>
+          </div>
+        </div>
       </section>
 
       <!-- ===== COUNT ===== -->
@@ -824,6 +866,7 @@ window.addEventListener('load', async ()=>{
 /* ---------- nav ---------- */
 function toggleNav(){ document.getElementById('side').classList.toggle('open'); document.getElementById('backdrop').classList.toggle('open'); }
 function go(page){
+  if(typeof cdCleanup==='function') cdCleanup(); // ปิด real-time listener เมื่อเปลี่ยนหน้า
   document.querySelectorAll('nav.side a').forEach(a=>a.classList.toggle('active',a.dataset.page===page));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -831,6 +874,7 @@ function go(page){
   if(page==='dashboard')loadDashboard();
   if(page==='assets')loadAssets();
   if(page==='count')loadSessions();
+  if(page==='countdash')loadCountDash();
   if(page==='barcode')loadBarcodePage();
   if(page==='export')fillExportDropdowns();
   if(page==='settings')setTab('users',document.querySelector('#setTabs button'));
@@ -1147,6 +1191,87 @@ async function doClose(){
   catch(e){toast(e.message,'err');}
 }
 
+/* ============ COUNT DASHBOARD ============ */
+let cdSessions=[], cdCurrent=null, cdUnsub=null, cdChartObj=null, cdLastResult=null;
+async function loadCountDash(){
+  try{
+    cdSessions=(await api('listSessions')).sessions;
+    const sel=document.getElementById('cdSession');
+    if(!cdSessions.length){ document.getElementById('cdEmpty').style.display='block'; document.getElementById('cdBody').style.display='none'; sel.innerHTML=''; return; }
+    document.getElementById('cdEmpty').style.display='none';
+    sel.innerHTML=cdSessions.map((s,i)=>`<option value="${esc(s.SessionID)}">${esc(s.SessionID)} · รอบ ${esc(s.Round)} · ${esc(s.Status)}</option>`).join('');
+    cdSelectSession(); // เลือกรอบล่าสุด (index 0 เพราะ listSessions เรียงใหม่->เก่า)
+  }catch(e){toast(e.message,'err');}
+}
+function cdSelectSession(){
+  const sid=document.getElementById('cdSession').value;
+  cdCurrent=cdSessions.find(s=>s.SessionID===sid);
+  if(!cdCurrent)return;
+  document.getElementById('cdBody').style.display='block';
+  document.getElementById('cdTitle').textContent=cdCurrent.SessionID;
+  document.getElementById('cdSub').textContent='รอบที่ '+cdCurrent.Round+' · '+cdCurrent.CreatedBy+' · '+cdCurrent.CreatedDate+' · '+cdCurrent.Status;
+  // ยกเลิก listener เก่า แล้วผูกใหม่กับ items ของรอบนี้ (real-time)
+  if(cdUnsub){ cdUnsub(); cdUnsub=null; }
+  cdUnsub = db.collection('sessions').doc(sid).collection('items').onSnapshot(()=>{ cdRefresh(sid); });
+  cdRefresh(sid);
+}
+async function cdRefresh(sid){
+  try{
+    const r=(await api('countResult',{sessionId:sid})).result;
+    cdLastResult=r;
+    const pct=n=> r.total? (n/r.total*100).toFixed(1) : '0.0';
+    document.getElementById('cdTotal').textContent=r.total;
+    document.getElementById('cdFound').textContent=r.found;
+    document.getElementById('cdMissing').textContent=r.missing;
+    document.getElementById('cdExtra').textContent=r.extra;
+    document.getElementById('cdFoundPct').textContent='('+pct(r.found)+'%)';
+    document.getElementById('cdMissingPct').textContent='('+pct(r.missing)+'%)';
+    document.getElementById('cdExtraPct').textContent='('+pct(r.extra)+'%)';
+    const prog=r.total? (r.found/r.total*100):0;
+    document.getElementById('cdProgBar').style.width=prog.toFixed(1)+'%';
+    document.getElementById('cdProgTxt').textContent='นับไปแล้ว '+r.found+' / '+r.total+' ชิ้น ('+prog.toFixed(1)+'%)';
+    cdRenderCompare(sid, r);
+    cdRenderChart(sid);
+  }catch(e){}
+}
+function cdFindPrev_(sid){
+  // รอบก่อนหน้า = session ที่เก่ากว่า sid ถัดไปในลิสต์ (cdSessions เรียงใหม่->เก่า)
+  const idx=cdSessions.findIndex(s=>s.SessionID===sid);
+  return (idx>=0 && idx+1<cdSessions.length) ? cdSessions[idx+1] : null;
+}
+async function cdRenderCompare(sid, cur){
+  const prev=cdFindPrev_(sid);
+  const box=document.getElementById('cdCompare');
+  if(!prev){ box.innerHTML='<div class="muted">ไม่มีรอบก่อนหน้าให้เทียบ</div>'; return; }
+  let pr;
+  try{ pr=(await api('countResult',{sessionId:prev.SessionID})).result; }catch(e){ box.innerHTML='<div class="muted">โหลดรอบก่อนไม่ได้</div>'; return; }
+  const pct=(n,t)=> t? (n/t*100).toFixed(1) : '0.0';
+  const arrow=(now,before,goodDown)=>{ const d=now-before; if(d===0)return '<span class="muted">—</span>';
+    const good= goodDown? d<0 : d>0; const col=good?'var(--ok)':'var(--danger)';
+    return `<span style="color:${col}">${d>0?'▲ +':'▼ '}${d}</span>`; };
+  box.innerHTML=`<table style="width:100%"><thead><tr><th></th><th>รอบก่อน</th><th>รอบนี้</th><th>เปลี่ยน</th></tr></thead><tbody>
+    <tr><td>ความแม่นยำ</td><td>${pct(pr.found,pr.total)}%</td><td>${pct(cur.found,cur.total)}%</td><td>${arrow(+pct(cur.found,cur.total),+pct(pr.found,pr.total),false)}%</td></tr>
+    <tr><td>ขาด</td><td>${pr.missing} (${pct(pr.missing,pr.total)}%)</td><td>${cur.missing} (${pct(cur.missing,cur.total)}%)</td><td>${arrow(cur.missing,pr.missing,true)} ชิ้น</td></tr>
+    <tr><td>เกิน</td><td>${pr.extra} (${pct(pr.extra,pr.total)}%)</td><td>${cur.extra} (${pct(cur.extra,cur.total)}%)</td><td>${arrow(cur.extra,pr.extra,true)} ชิ้น</td></tr>
+  </tbody></table>`;
+}
+async function cdRenderChart(sid){
+  // ย้อนหลังสูงสุด 5 รอบ (รวมรอบปัจจุบัน) — เรียงเก่า->ใหม่
+  const idx=cdSessions.findIndex(s=>s.SessionID===sid);
+  const slice=cdSessions.slice(idx, idx+5).reverse();
+  const labels=[], data=[];
+  for(const s of slice){
+    try{ const r=(await api('countResult',{sessionId:s.SessionID})).result;
+      labels.push(s.SessionID.slice(-6)); data.push(r.total? +(r.found/r.total*100).toFixed(1):0); }catch(e){}
+  }
+  const ctx=document.getElementById('cdChart');
+  if(cdChartObj)cdChartObj.destroy();
+  cdChartObj=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'%ความแม่นยำ',data,backgroundColor:'#1a4b8c'}]},
+    options:{scales:{y:{beginAtZero:true,max:100}},plugins:{legend:{display:false}}}});
+}
+// ยกเลิก listener เมื่อออกจากหน้า (กัน memory leak / อ่าน quota เปล่า)
+function cdCleanup(){ if(cdUnsub){ cdUnsub(); cdUnsub=null; } }
+
 /* ============ BARCODE ============ */
 let bcSelected={};
 async function loadBarcodePage(){
@@ -1294,6 +1419,120 @@ async function exportPDF(){
 }
 function dl(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
 function today(){ return new Date().toISOString().slice(0,10); }
+
+/* ============ COUNT REPORT EXPORT ============ */
+// โหลดรูปเป็น base64 พร้อม progress — คืน {assetId: {data,fmt,w,h}}
+async function cdLoadImages_(list, msgEl){
+  const map={}; let done=0;
+  for(const a of list){
+    const u=(a.photoSlots||a.photos||[]).find(x=>x);
+    done++; if(msgEl) msgEl.textContent='กำลังโหลดรูป '+done+'/'+list.length+'...';
+    if(!u) continue;
+    try{
+      const p=await api('photoData',{url:u});
+      const dataUrl='data:'+(p.mime||'image/jpeg')+';base64,'+p.dataBase64;
+      const dim=await new Promise(res=>{ const im=new Image(); im.onload=()=>res({ok:true,w:im.naturalWidth,h:im.naturalHeight}); im.onerror=()=>res({ok:false}); im.src=dataUrl; });
+      if(dim.ok) map[a.assetId]={data:dataUrl, fmt:(p.mime==='image/png'?'PNG':'JPEG'), w:dim.w, h:dim.h};
+    }catch(e){}
+  }
+  return map;
+}
+// รวมข้อมูลรอบ + รายการทุกตัว (พบ/ขาด/เกิน)
+async function cdBuildReportData_(sid){
+  const r=(await api('countResult',{sessionId:sid})).result;
+  const allAssets=(await api('listAssets',{})).assets;
+  const items=(await api('countResult',{sessionId:sid})).result; // already have r
+  // สร้าง set ของที่พบ จาก missingItems (ขาด) + total
+  const missingSet={}; r.missingItems.forEach(m=>missingSet[m.wfdcId]=true);
+  const extraSet={}; r.extraItems.forEach(m=>extraSet[m.wfdcId]=true);
+  const rows=allAssets.filter(a=>a.status!=='จำหน่ายแล้ว').map(a=>({
+    ...a, _state: missingSet[a.wfdcId]?'ขาด':'พบ'
+  }));
+  const extraRows=r.extraItems.map(m=>({ wfdcId:m.wfdcId, name:'(ไม่มีในระบบ)', _state:'เกิน' }));
+  return { r, rows, extraRows, session:cdCurrent };
+}
+async function exportCountPDF(){
+  const msg=document.getElementById('cdExMsg'); const sid=cdCurrent.SessionID;
+  msg.textContent='กำลังสร้างรายงาน...';
+  try{
+    const {r,rows,extraRows,session}=await cdBuildReportData_(sid);
+    const imgMap=await cdLoadImages_(rows, msg);
+    msg.textContent='กำลังสร้าง PDF...';
+    const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    registerThaiFont_(doc);
+    const draft = session.Status!=='done';
+    // header
+    doc.setFont('Sarabun','bold'); doc.setFontSize(15); doc.text('รายงานการนับสต็อกทรัพย์สิน',14,16);
+    doc.setFont('Sarabun','normal'); doc.setFontSize(9);
+    doc.text('CJ LOGISTICS · WFDC',14,22);
+    doc.text('รอบนับ: '+session.SessionID+'    รอบที่: '+session.Round,14,28);
+    doc.text('ผู้นับ: '+session.CreatedBy+'    วันที่: '+session.CreatedDate+'    สถานะ: '+session.Status,14,33);
+    if(draft){ doc.setTextColor(200,0,0); doc.setFont('Sarabun','bold'); doc.text('*** ฉบับร่าง — ยังไม่ปิดรอบ ***',14,39); doc.setTextColor(0,0,0); doc.setFont('Sarabun','normal'); }
+    const pct=n=> r.total?(n/r.total*100).toFixed(1):'0.0';
+    let y=draft?45:41;
+    doc.setFontSize(10); doc.setFont('Sarabun','bold');
+    doc.text(`ทั้งหมด ${r.total} · พบ ${r.found}(${pct(r.found)}%) · ขาด ${r.missing}(${pct(r.missing)}%) · เกิน ${r.extra}(${pct(r.extra)}%)`,14,y);
+    y+=4;
+    // ตารางครบทุกตัว พร้อมรูป
+    const body=rows.map(a=>[a.wfdcId, a.makroTag||'-', a.name, a.category||'-', a.zone||'-', a._state, '']);
+    extraRows.forEach(e=>body.push([e.wfdcId,'-','(ไม่มีในระบบ)','-','-','เกิน','']));
+    doc.autoTable({
+      startY:y+2, head:[['WFDC','Makro','ชื่อ','หมวด','โซน','ผล','รูป']],
+      body, styles:{font:'Sarabun',fontStyle:'normal',fontSize:7,cellPadding:1.5,minCellHeight:16,valign:'middle'},
+      headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]},
+      columnStyles:{6:{cellWidth:18}},
+      didParseCell:function(d){ if(d.section==='body'&&d.column.index===5){ const v=d.cell.raw;
+        if(v==='ขาด')d.cell.styles.textColor=[200,0,0]; else if(v==='เกิน')d.cell.styles.textColor=[200,140,0]; else d.cell.styles.textColor=[0,140,0]; } },
+      didDrawCell:function(d){ if(d.section==='body'&&d.column.index===6){ const a=rows[d.row.index]; const img=a&&imgMap[a.assetId];
+        if(img){ try{ doc.addImage(img.data,img.fmt,d.cell.x+1,d.cell.y+1,14,14); }catch(e){} } } }
+    });
+    // ช่องเซ็น
+    let sy=doc.lastAutoTable.finalY+16; if(sy>270){doc.addPage();sy=20;}
+    doc.setFont('Sarabun','normal'); doc.setFontSize(9);
+    doc.text('ผู้นับ ............................',14,sy);
+    doc.text('ผู้ตรวจสอบ ............................',78,sy);
+    doc.text('ผู้อนุมัติ ............................',145,sy);
+    doc.save('CountReport_'+session.SessionID+'_'+today()+'.pdf');
+    msg.textContent='ดาวน์โหลด PDF แล้ว';
+  }catch(e){ msg.textContent=''; toast(e.message,'err'); }
+}
+async function exportCountExcel(){
+  const msg=document.getElementById('cdExMsg'); const sid=cdCurrent.SessionID;
+  msg.textContent='กำลังสร้างรายงาน...';
+  try{
+    const {r,rows,extraRows,session}=await cdBuildReportData_(sid);
+    const imgMap=await cdLoadImages_(rows, msg);
+    msg.textContent='กำลังสร้าง Excel...';
+    const wb=new ExcelJS.Workbook();
+    const pct=n=> r.total?(n/r.total*100).toFixed(1):'0.0';
+    // sheet สรุป
+    const s1=wb.addWorksheet('สรุป');
+    s1.addRow(['รายงานการนับสต็อกทรัพย์สิน']); s1.getRow(1).font={bold:true,size:14};
+    s1.addRow(['รอบนับ',session.SessionID]); s1.addRow(['รอบที่',session.Round]);
+    s1.addRow(['ผู้นับ',session.CreatedBy]); s1.addRow(['วันที่',session.CreatedDate]); s1.addRow(['สถานะ',session.Status]);
+    if(session.Status!=='done') s1.addRow(['หมายเหตุ','*** ฉบับร่าง — ยังไม่ปิดรอบ ***']);
+    s1.addRow([]);
+    s1.addRow(['ทั้งหมด',r.total]); s1.addRow(['พบ',r.found,pct(r.found)+'%']);
+    s1.addRow(['ขาด',r.missing,pct(r.missing)+'%']); s1.addRow(['เกิน',r.extra,pct(r.extra)+'%']);
+    // sheet รายการ (ครบทุกตัว + รูปฝัง)
+    const s2=wb.addWorksheet('รายการทั้งหมด');
+    s2.columns=[{header:'WFDC',width:16},{header:'Makro',width:14},{header:'ชื่อ',width:24},{header:'หมวด',width:16},{header:'โซน',width:16},{header:'ผล',width:10},{header:'รูป',width:16}];
+    s2.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; s2.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0D2A52'}};
+    let rowN=2;
+    const allRows=rows.concat(extraRows.map(e=>({wfdcId:e.wfdcId,makroTag:'-',name:'(ไม่มีในระบบ)',category:'-',zone:'-',_state:'เกิน'})));
+    for(const a of allRows){
+      const row=s2.addRow([a.wfdcId,a.makroTag||'-',a.name,a.category||'-',a.zone||'-',a._state]);
+      row.height=42;
+      const img=imgMap[a.assetId];
+      if(img){ try{ const id=wb.addImage({base64:img.data, extension:(img.fmt==='PNG'?'png':'jpeg')});
+        s2.addImage(id,{tl:{col:6,row:rowN-1},ext:{width:52,height:52}}); }catch(e){} }
+      rowN++;
+    }
+    const buf=await wb.xlsx.writeBuffer();
+    dl(new Blob([buf]),'CountReport_'+session.SessionID+'_'+today()+'.xlsx');
+    msg.textContent='ดาวน์โหลด Excel แล้ว';
+  }catch(e){ msg.textContent=''; toast(e.message,'err'); }
+}
 
 /* ============ SETTINGS ============ */
 let curTab='users';
