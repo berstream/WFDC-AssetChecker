@@ -7,7 +7,7 @@
 
 <!-- CDN libs -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -159,7 +159,8 @@ td.wrap{white-space:normal}
   /* สเปกจริง TSC MB241: 32mm กว้าง x 25.4mm สูง, 3 ดวง/แถว, gap แนวนอน 2mm แนวตั้ง 3mm, ขอบซ้ายขวา 2mm, กระดาษกว้างรวม 106mm */
   .label{width:32mm;height:25.4mm;box-sizing:border-box;display:flex;flex-direction:column;
     align-items:center;justify-content:center;padding:1mm;overflow:hidden;page-break-inside:avoid}
-  .label canvas{width:14mm;height:14mm}
+  .label .qrbox{width:14mm;height:14mm}
+  .label .qrbox canvas,.label .qrbox img{width:100%;height:100%}
   .label .nm{font-size:7pt;font-weight:700;text-align:center;line-height:1.1;margin-top:0.5mm;
     white-space:normal;overflow:hidden;max-height:8mm;max-width:100%;word-break:break-word}
   @page{size:106mm auto;margin:0}
@@ -1152,14 +1153,14 @@ function printBarcodes(){
   const sheet=document.getElementById('labelSheet'); sheet.innerHTML='';
   sel.forEach(a=>{
     const div=document.createElement('div'); div.className='label';
-    const canvas=document.createElement('canvas');
-    div.appendChild(canvas);
+    const qrbox=document.createElement('div'); qrbox.className='qrbox';
+    div.appendChild(qrbox);
     const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.name||a.wfdcId;
     div.appendChild(nm);
     sheet.appendChild(div);
-    QRCode.toCanvas(canvas, a.wfdcId, { width:120, margin:0 }, function(err){ if(err) console.error('QR error:',err); });
+    new QRCode(qrbox, { text:a.wfdcId, width:120, height:120, correctLevel:QRCode.CorrectLevel.M });
   });
-  setTimeout(()=>window.print(),400);
+  setTimeout(()=>window.print(),300);
 }
 
 /* ============ EXPORT ============ */
