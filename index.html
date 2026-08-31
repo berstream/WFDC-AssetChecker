@@ -716,6 +716,21 @@ const FIRESTORE_ACTIONS = {
     await db.collection('sessions').doc(sessionId).update({ status:'done' });
     return { ok:true };
   },
+  deleteSession: async ({sessionId}) => {
+    const ref = db.collection('sessions').doc(sessionId);
+    if(!(await ref.get()).exists) throw new Error('ไม่พบรอบนับ');
+    // ลบ sub-collection items ทีละ batch (กันเกินลิมิต 500 ต่อ batch)
+    while(true){
+      const snap = await ref.collection('items').limit(400).get();
+      if(snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach(d=>batch.delete(d.ref));
+      await batch.commit();
+      if(snap.size < 400) break;
+    }
+    await ref.delete();
+    return { ok:true };
+  },
 
   /* ---- admin: users ---- */
   listUsers: async () => {
@@ -1096,9 +1111,18 @@ async function loadSessions(){
       const st={counting:'warn',recheck:'move',done:'ok'}[s.Status]||'ok';
       tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(s.CreatedDate)}</td><td>${esc(s.CreatedBy)}</td>
         <td>${esc(s.Round)}</td><td><span class="chip ${st}">${esc(s.Status)}</span></td>
-        <td><button class="btn ghost sm" onclick='openSession(${JSON.stringify(s.SessionID)})'>เปิด</button></td>`;
+        <td><button class="btn ghost sm" onclick='openSession(${JSON.stringify(s.SessionID)})'>เปิด</button>${USER.role==='admin'?`<button class="btn ghost sm" style="color:var(--danger)" onclick='deleteSession(${JSON.stringify(s.SessionID)})'>ลบ</button>`:''}</td>`;
       tb.appendChild(tr);
     });
+  }catch(e){toast(e.message,'err');}
+}
+async function deleteSession(sessionId){
+  if(USER.role!=='admin'){ toast('เฉพาะผู้ดูแลระบบเท่านั้น','err'); return; }
+  if(!confirm('ลบรอบนับ "'+sessionId+'" ถาวร?\nรวมรายการที่สแกนในรอบนี้ทั้งหมด — กู้คืนไม่ได้'))return;
+  try{
+    await api('deleteSession',{sessionId});
+    toast('ลบรอบนับแล้ว','ok');
+    loadSessions();
   }catch(e){toast(e.message,'err');}
 }
 async function newSession(){
