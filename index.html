@@ -687,9 +687,18 @@ const FIRESTORE_ACTIONS = {
     return { ok:true, sessions: snap.docs.map(d=>{ const s=d.data(); return { SessionID:d.id, CreatedDate:s.createdDate, CreatedBy:s.createdBy, Status:s.status, Round:s.round, Note:s.note }; }) };
   },
   createSession: async () => {
+    const now = new Date(Date.now() + 7*3600*1000); // เวลาไทย
+    const p = n => String(n).padStart(2,'0');
+    const ymd = String(now.getUTCFullYear()).slice(2)+p(now.getUTCMonth()+1)+p(now.getUTCDate());
+    const prefix = 'COUNT-'+ymd+'-';
+    // นับ session ของวันนี้ (id ขึ้นต้นด้วย prefix) เพื่อหาลำดับถัดไป
+    const all = await db.collection('sessions').get();
+    let maxSeq = 0;
+    all.forEach(d=>{ if(d.id.indexOf(prefix)===0){ const n=parseInt(d.id.slice(prefix.length),10); if(n>maxSeq)maxSeq=n; } });
+    const sid = prefix + p(maxSeq + 1);
     const ts = new Date().toISOString();
-    const ref = await db.collection('sessions').add({ createdDate:ts, createdBy:USER.empId, status:'counting', round:1, note:'' });
-    return { ok:true, sessionId: ref.id };
+    await db.collection('sessions').doc(sid).set({ createdDate:ts, createdBy:USER.empId, status:'counting', round:1, note:'' });
+    return { ok:true, sessionId: sid };
   },
   getSession: async ({sessionId}) => {
     const snap = await db.collection('sessions').doc(sessionId).get();
@@ -1072,7 +1081,7 @@ function onStatusChange(){
 async function loadAssetLog(assetId){
   try{ const logs=(await api('getAssetLog',{assetId})).logs;
     document.getElementById('logBody').innerHTML = logs.length?logs.map(l=>
-      `<tr><td>${esc(l.time)}</td><td>${esc(l.user)}</td><td>${esc(l.action)}</td>
+      `<tr><td>${esc(fmtDate(l.time))}</td><td>${esc(l.user)}</td><td>${esc(l.action)}</td>
        <td>${esc(l.oldStatus)}→${esc(l.newStatus)}</td><td class="wrap">${esc(l.reason)} ${esc(l.detail)}</td></tr>`).join('')
       : '<tr><td colspan="5" class="muted">ยังไม่มีประวัติ</td></tr>';
   }catch(e){}
@@ -1161,7 +1170,7 @@ async function loadSessions(){
     ss.forEach(s=>{
       const tr=document.createElement('tr');
       const st={counting:'warn',recheck:'move',done:'ok'}[s.Status]||'ok';
-      tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(s.CreatedDate)}</td><td>${esc(s.CreatedBy)}</td>
+      tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(fmtDate(s.CreatedDate))}</td><td>${esc(s.CreatedBy)}</td>
         <td>${esc(s.Round)}</td><td><span class="chip ${st}">${esc(s.Status)}</span></td>
         <td><button class="btn ghost sm" onclick='openSession(${JSON.stringify(s.SessionID)})'>เปิด</button>${USER.role==='admin'?`<button class="btn ghost sm" style="color:var(--danger)" onclick='deleteSession(${JSON.stringify(s.SessionID)})'>ลบ</button>`:''}</td>`;
       tb.appendChild(tr);
@@ -1285,7 +1294,7 @@ function cdSelectSession(){
   if(!cdCurrent)return;
   document.getElementById('cdBody').style.display='block';
   document.getElementById('cdTitle').textContent=cdCurrent.SessionID;
-  document.getElementById('cdSub').textContent='รอบที่ '+cdCurrent.Round+' · '+cdCurrent.CreatedBy+' · '+cdCurrent.CreatedDate+' · '+cdCurrent.Status;
+  document.getElementById('cdSub').textContent='รอบที่ '+cdCurrent.Round+' · '+cdCurrent.CreatedBy+' · '+fmtDate(cdCurrent.CreatedDate)+' · '+cdCurrent.Status;
   // ยกเลิก listener เก่า แล้วผูกใหม่กับ items ของรอบนี้ (real-time)
   if(cdUnsub){ cdUnsub(); cdUnsub=null; }
   cdUnsub = db.collection('sessions').doc(sid).collection('items').onSnapshot(()=>{ cdRefresh(sid); });
@@ -1495,6 +1504,16 @@ async function exportPDF(){
 }
 function dl(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
 function today(){ return new Date().toISOString().slice(0,10); }
+/* แปลงวันที่ให้อ่านง่าย 2026-08-31 13:07 (เวลาไทย) — รับได้ทั้ง ISO UTC และ string เก่าจาก GAS */
+function fmtDate(v){
+  if(!v) return '-';
+  let d = new Date(v);
+  if(isNaN(d.getTime())) return String(v); // parse ไม่ได้ก็คืนค่าเดิม กันพัง
+  // แปลงเป็นเวลาไทย (UTC+7) แล้ว format
+  const th = new Date(d.getTime() + 7*3600*1000);
+  const p = n => String(n).padStart(2,'0');
+  return th.getUTCFullYear()+'-'+p(th.getUTCMonth()+1)+'-'+p(th.getUTCDate())+' '+p(th.getUTCHours())+':'+p(th.getUTCMinutes());
+}
 
 /* ============ COUNT REPORT EXPORT ============ */
 // โหลดรูปเป็น base64 พร้อม progress — คืน {assetId: {data,fmt,w,h}}
@@ -1542,7 +1561,7 @@ async function exportCountPDF(){
     doc.setFont('Sarabun','normal'); doc.setFontSize(9);
     doc.text('CJ LOGISTICS · WFDC',14,22);
     doc.text('รอบนับ: '+session.SessionID+'    รอบที่: '+session.Round,14,28);
-    doc.text('ผู้นับ: '+session.CreatedBy+'    วันที่: '+session.CreatedDate+'    สถานะ: '+session.Status,14,33);
+    doc.text('ผู้นับ: '+session.CreatedBy+'    วันที่: '+fmtDate(session.CreatedDate)+'    สถานะ: '+session.Status,14,33);
     if(draft){ doc.setTextColor(200,0,0); doc.setFont('Sarabun','bold'); doc.text('*** ฉบับร่าง — ยังไม่ปิดรอบ ***',14,39); doc.setTextColor(0,0,0); doc.setFont('Sarabun','normal'); }
     const pct=n=> r.total?(n/r.total*100).toFixed(1):'0.0';
     let y=draft?45:41;
@@ -1585,7 +1604,7 @@ async function exportCountExcel(){
     const s1=wb.addWorksheet('สรุป');
     s1.addRow(['รายงานการนับสต็อกทรัพย์สิน']); s1.getRow(1).font={bold:true,size:14};
     s1.addRow(['รอบนับ',session.SessionID]); s1.addRow(['รอบที่',session.Round]);
-    s1.addRow(['ผู้นับ',session.CreatedBy]); s1.addRow(['วันที่',session.CreatedDate]); s1.addRow(['สถานะ',session.Status]);
+    s1.addRow(['ผู้นับ',session.CreatedBy]); s1.addRow(['วันที่',fmtDate(session.CreatedDate)]); s1.addRow(['สถานะ',session.Status]);
     if(session.Status!=='done') s1.addRow(['หมายเหตุ','*** ฉบับร่าง — ยังไม่ปิดรอบ ***']);
     s1.addRow([]);
     s1.addRow(['ทั้งหมด',r.total]); s1.addRow(['พบ',r.found,pct(r.found)+'%']);
