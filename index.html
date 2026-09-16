@@ -1554,7 +1554,7 @@ async function exportPDF(){
       headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]}, columnStyles:{6:{cellWidth:26}},
       didDrawCell:function(data){
         if(data.section==='body' && data.column.index===6){
-          const a=assets[data.row.index]; const img=imgMap[a.assetId];
+          const a=assets[data.row.index]; const img=a&&imgMap[a.assetId];
           if(img){ try{ doc.addImage(img.data,img.fmt,data.cell.x+1,data.cell.y+1,22,18); }catch(e){} }
         }
       }
