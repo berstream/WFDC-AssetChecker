@@ -309,13 +309,18 @@ td.wrap{white-space:normal}
         <div class="page-head"><h2>นับสต็อก (Physical Count)</h2></div>
         <div id="countHome">
           <div class="card">
-            <div class="row">
+            <div class="row" style="align-items:flex-end">
+              <div>
+                <label class="f">โซนที่จะนับ</label>
+                <select id="newSessZone" class="inp" style="min-width:180px"></select>
+              </div>
               <button class="btn primary" onclick="newSession()">+ เริ่มรอบนับใหม่</button>
               <button class="btn ghost sm" onclick="loadSessions()">↻ รีเฟรช</button>
             </div>
+            <div class="muted" style="margin-top:8px">เลือก "ทั้งคลัง" เพื่อนับทุกโซน หรือเจาะจงโซนเพื่อแบ่งกันนับ แล้วผลรวมทุกโซนจะมาปรากฏที่หน้า Dashboard นับสต็อก</div>
           </div>
           <div class="tbl-wrap"><table id="sessTbl"><thead><tr>
-            <th>Session</th><th>วันที่</th><th>ผู้สร้าง</th><th>รอบ</th><th>สถานะ</th><th></th>
+            <th>Session</th><th>วันที่</th><th>โซน</th><th>ผู้สร้าง</th><th>รอบ</th><th>สถานะ</th><th></th>
           </tr></thead><tbody></tbody></table></div>
         </div>
 
@@ -638,14 +643,43 @@ const FIRESTORE_ACTIONS = {
   },
 
   updateAsset: async (req) => {
-    const wfdc = ASSETS_BY_ASSETID_[req.assetId];
-    if(!wfdc) throw new Error('ไม่พบรายการทรัพย์สิน');
-    const ref = db.collection('assets').doc(wfdc);
+    const oldWfdc = ASSETS_BY_ASSETID_[req.assetId];
+    if(!oldWfdc) throw new Error('ไม่พบรายการทรัพย์สิน');
+    const ref = db.collection('assets').doc(oldWfdc);
     const snap = await ref.get();
     if(!snap.exists) throw new Error('ไม่พบรายการทรัพย์สิน');
     const a = snap.data(), oldStatus = a.status, newStatus = (req.status!==undefined)?req.status:oldStatus;
     if(oldStatus !== newStatus && !req.reason) throw new Error('การเปลี่ยนสถานะต้องระบุเหตุผล');
     const ts = new Date().toISOString();
+    const newWfdc = (req.wfdcId!==undefined) ? String(req.wfdcId).trim() : oldWfdc;
+    const wfdcChanged = newWfdc && newWfdc !== oldWfdc;
+
+    // ---- กรณีเปลี่ยน WFDC ID: doc ID คือ WFDC ID → ต้องย้าย document ----
+    if(wfdcChanged){
+      if(!newWfdc) throw new Error('เลข WFDC ใหม่ว่างไม่ได้');
+      const dupRef = db.collection('assets').doc(newWfdc);
+      if((await dupRef.get()).exists) throw new Error('เลขทรัพย์สิน WFDC ใหม่นี้มีอยู่แล้ว: '+newWfdc);
+      // ประกอบข้อมูลใหม่จากของเดิม + ค่าที่แก้
+      const merged = Object.assign({}, a, { wfdcId:newWfdc, updatedBy:USER.empId, updatedAt:ts });
+      ['makroTag','name','category','zone','owner','status','note'].forEach(k=>{ if(req[k]!==undefined) merged[k]=req[k]; });
+      if(req.photos) merged.photos = [req.photos[0]||'',req.photos[1]||'',req.photos[2]||'',req.photos[3]||''];
+      await dupRef.set(merged);
+      // ก๊อป log เดิมทั้งหมดไป doc ใหม่
+      const oldLogs = await ref.collection('logs').get();
+      let batch = db.batch(); let n=0;
+      oldLogs.docs.forEach(d=>{ batch.set(dupRef.collection('logs').doc(d.id), d.data()); if(++n>=400){ batch.commit(); batch=db.batch(); n=0; } });
+      if(n>0) await batch.commit();
+      // log การเปลี่ยนเลข + (ถ้ามี) การเปลี่ยนสถานะ ในรอบเดียว
+      await dupRef.collection('logs').add({ timestamp:ts, user:USER.empId, action:'wfdc-change', oldStatus, newStatus, reason:req.reason||'', detail:'เปลี่ยนเลข WFDC: '+oldWfdc+' → '+newWfdc });
+      // ลบ doc เดิม (ลบ logs sub-collection ก่อน)
+      let lb=db.batch(), m=0;
+      oldLogs.docs.forEach(d=>{ lb.delete(d.ref); if(++m>=400){ lb.commit(); lb=db.batch(); m=0; } });
+      if(m>0) await lb.commit();
+      await ref.delete();
+      return { ok:true, wfdcChanged:true, newWfdc };
+    }
+
+    // ---- กรณีปกติ ----
     const patch = { updatedBy:USER.empId, updatedAt:ts };
     ['makroTag','name','category','zone','owner','status','note'].forEach(k=>{ if(req[k]!==undefined) patch[k]=req[k]; });
     if(req.photos) patch.photos = [req.photos[0]||'',req.photos[1]||'',req.photos[2]||'',req.photos[3]||''];
@@ -684,9 +718,9 @@ const FIRESTORE_ACTIONS = {
   /* ---- sessions ---- */
   listSessions: async () => {
     const snap = await db.collection('sessions').orderBy('createdDate','desc').get();
-    return { ok:true, sessions: snap.docs.map(d=>{ const s=d.data(); return { SessionID:d.id, CreatedDate:s.createdDate, CreatedBy:s.createdBy, Status:s.status, Round:s.round, Note:s.note }; }) };
+    return { ok:true, sessions: snap.docs.map(d=>{ const s=d.data(); return { SessionID:d.id, CreatedDate:s.createdDate, CreatedBy:s.createdBy, Status:s.status, Round:s.round, Note:s.note, Zone:s.zone||'' }; }) };
   },
-  createSession: async () => {
+  createSession: async ({zone}={}) => {
     const now = new Date(Date.now() + 7*3600*1000); // เวลาไทย
     const p = n => String(n).padStart(2,'0');
     const ymd = String(now.getUTCFullYear()).slice(2)+p(now.getUTCMonth()+1)+p(now.getUTCDate());
@@ -697,36 +731,44 @@ const FIRESTORE_ACTIONS = {
     all.forEach(d=>{ if(d.id.indexOf(prefix)===0){ const n=parseInt(d.id.slice(prefix.length),10); if(n>maxSeq)maxSeq=n; } });
     const sid = prefix + p(maxSeq + 1);
     const ts = new Date().toISOString();
-    await db.collection('sessions').doc(sid).set({ createdDate:ts, createdBy:USER.empId, status:'counting', round:1, note:'' });
+    await db.collection('sessions').doc(sid).set({ createdDate:ts, createdBy:USER.empId, status:'counting', round:1, note:'', zone:(zone||'') });
     return { ok:true, sessionId: sid };
   },
   getSession: async ({sessionId}) => {
     const snap = await db.collection('sessions').doc(sessionId).get();
     if(!snap.exists) throw new Error('ไม่พบ session');
     const s = snap.data();
-    return { ok:true, session: { SessionID:sessionId, CreatedDate:s.createdDate, CreatedBy:s.createdBy, Status:s.status, Round:s.round, Note:s.note } };
+    return { ok:true, session: { SessionID:sessionId, CreatedDate:s.createdDate, CreatedBy:s.createdBy, Status:s.status, Round:s.round, Note:s.note, Zone:s.zone||'' } };
   },
   scanCount: async ({sessionId, wfdcId}) => {
     wfdcId = (wfdcId||'').trim();
     if(!wfdcId) throw new Error('ไม่มีรหัสสแกน');
     const sSnap = await db.collection('sessions').doc(sessionId).get();
     if(!sSnap.exists) throw new Error('ไม่พบ session');
-    const round = sSnap.data().round || 1;
+    const sess = sSnap.data();
+    const round = sess.round || 1;
+    const sessZone = sess.zone || '';
     const itemId = wfdcId+'_r'+round;
     const itemRef = db.collection('sessions').doc(sessionId).collection('items').doc(itemId);
     const exists = await itemRef.get();
     const aSnap = await db.collection('assets').doc(wfdcId).get();
     const asset = aSnap.exists ? aSnap.data() : null;
-    if(exists.exists) return { ok:true, duplicate:true, matched:!!asset, name: asset?asset.name:'' };
+    // ผิดโซน: นับเจาะจงโซน แต่ของชิ้นนี้ระบบบอกอยู่คนละโซน
+    const wrongZone = !!(asset && sessZone && asset.zone && asset.zone !== sessZone);
+    if(exists.exists) return { ok:true, duplicate:true, matched:!!asset, name: asset?asset.name:'', wrongZone, assetZone: asset?asset.zone:'' };
     await itemRef.set({ wfdcId, assetId: asset?asset.assetId:'', found:true, round, countedBy:USER.empId, countedAt:new Date().toISOString(), location:'', note:'' });
-    return { ok:true, matched:!!asset, name:asset?asset.name:'', category:asset?asset.category:'', zone:asset?asset.zone:'' };
+    return { ok:true, matched:!!asset, name:asset?asset.name:'', category:asset?asset.category:'', zone:asset?asset.zone:'', wrongZone, assetZone: asset?asset.zone:'' };
   },
   countResult: async ({sessionId}) => {
-    const [assetsSnap, itemsSnap] = await Promise.all([
+    const [sSnap, assetsSnap, itemsSnap] = await Promise.all([
+      db.collection('sessions').doc(sessionId).get(),
       db.collection('assets').get(),
       db.collection('sessions').doc(sessionId).collection('items').get()
     ]);
-    const expected = assetsSnap.docs.map(d=>({wfdcId:d.id, ...d.data()})).filter(a=>a.status!=='จำหน่ายแล้ว');
+    const sessZone = sSnap.exists ? (sSnap.data().zone||'') : '';
+    const expected = assetsSnap.docs.map(d=>({wfdcId:d.id, ...d.data()}))
+      .filter(a=>a.status!=='จำหน่ายแล้ว')
+      .filter(a=> sessZone ? (a.zone===sessZone) : true); // นับเจาะจงโซน → คาดหวังเฉพาะของในโซนนั้น
     const items = itemsSnap.docs.map(d=>d.data());
     const countedWfdc = {}; items.forEach(i=>{ if(i.found===true) countedWfdc[i.wfdcId]=true; });
     const missing=[], found=[];
@@ -945,7 +987,7 @@ function go(page){
   document.getElementById('side').classList.remove('open'); document.getElementById('backdrop').classList.remove('open');
   if(page==='dashboard')loadDashboard();
   if(page==='assets')loadAssets();
-  if(page==='count')loadSessions();
+  if(page==='count'){ fillNewSessZone(); loadSessions(); }
   if(page==='countdash')loadCountDash();
   if(page==='barcode')loadBarcodePage();
   if(page==='export')fillExportDropdowns();
@@ -1056,7 +1098,7 @@ function openAsset(assetId){
   editing = assetId ? ASSETS.find(a=>a.assetId===assetId) : null;
   document.getElementById('amTitle').textContent = editing?'แก้ไขทรัพย์สิน':'เพิ่มทรัพย์สิน';
   document.getElementById('mAssetId').value = editing?editing.assetId:'';
-  set('mWfdc',editing?editing.wfdcId:''); document.getElementById('mWfdc').disabled=!!editing;
+  set('mWfdc',editing?editing.wfdcId:''); document.getElementById('mWfdc').disabled=false;
   set('mMakro',editing?editing.makroTag:''); set('mName',editing?editing.name:'');
   set('mCat',editing?editing.category:''); set('mZone',editing?editing.zone:'');
   set('mOwner',editing?editing.owner:''); set('mStatus',editing?editing.status:'ใช้งานปกติ');
@@ -1151,7 +1193,14 @@ async function saveAsset(){
         payload.reason=val('mReason'); payload.detail=val('mDetail');
         if(!payload.reason){toast('เลือกเหตุผลการเปลี่ยนสถานะ','err');btn.disabled=false;btn.textContent='บันทึก';return;}
       }
-      await api('updateAsset',payload); toast('บันทึกการแก้ไขแล้ว','ok');
+      // เตือนก่อนถ้าเปลี่ยนเลข WFDC — บาร์โค้ด/QR ที่แปะไปแล้วจะไม่ตรง ต้องพิมพ์ใหม่
+      if(wfdc!==editing.wfdcId){
+        if(!confirm('คุณกำลังเปลี่ยนเลข WFDC:\n\n'+editing.wfdcId+'  →  '+wfdc+'\n\nQR/บาร์โค้ดเดิมที่แปะของจริงจะสแกนไม่ตรง ต้องพิมพ์ใหม่ไปแปะแทน\nยืนยันเปลี่ยนหรือไม่?')){
+          btn.disabled=false; btn.textContent='บันทึก'; return;
+        }
+      }
+      const r=await api('updateAsset',payload);
+      toast(r.wfdcChanged?('เปลี่ยนเลข WFDC เป็น '+r.newWfdc+' แล้ว — อย่าลืมพิมพ์ QR ใหม่'):'บันทึกการแก้ไขแล้ว','ok');
     }else{
       await api('createAsset',payload); toast('เพิ่มทรัพย์สินแล้ว','ok');
     }
@@ -1166,11 +1215,11 @@ async function loadSessions(){
   try{
     const ss=(await api('listSessions')).sessions;
     const tb=document.querySelector('#sessTbl tbody'); tb.innerHTML='';
-    if(!ss.length){tb.innerHTML='<tr><td colspan="6" class="muted">ยังไม่มีรอบนับ</td></tr>';return;}
+    if(!ss.length){tb.innerHTML='<tr><td colspan="7" class="muted">ยังไม่มีรอบนับ</td></tr>';return;}
     ss.forEach(s=>{
       const tr=document.createElement('tr');
       const st={counting:'warn',recheck:'move',done:'ok'}[s.Status]||'ok';
-      tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(fmtDate(s.CreatedDate))}</td><td>${esc(s.CreatedBy)}</td>
+      tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(fmtDate(s.CreatedDate))}</td><td>${esc(s.Zone||'ทั้งคลัง')}</td><td>${esc(s.CreatedBy)}</td>
         <td>${esc(s.Round)}</td><td><span class="chip ${st}">${esc(s.Status)}</span></td>
         <td><button class="btn ghost sm" onclick='openSession(${JSON.stringify(s.SessionID)})'>เปิด</button>${USER.role==='admin'?`<button class="btn ghost sm" style="color:var(--danger)" onclick='deleteSession(${JSON.stringify(s.SessionID)})'>ลบ</button>`:''}</td>`;
       tb.appendChild(tr);
@@ -1186,8 +1235,14 @@ async function deleteSession(sessionId){
     loadSessions();
   }catch(e){toast(e.message,'err');}
 }
+function fillNewSessZone(){
+  const el=document.getElementById('newSessZone'); if(!el)return;
+  el.innerHTML='<option value="">ทั้งคลัง (ทุกโซน)</option>'+
+    CONFIG.zone.map(z=>`<option value="${esc(z.value)}">${esc(z.value)}</option>`).join('');
+}
 async function newSession(){
-  try{ const d=await api('createSession',{}); toast('สร้างรอบนับใหม่','ok'); openSession(d.sessionId); }
+  const zone=document.getElementById('newSessZone').value;
+  try{ const d=await api('createSession',{zone}); toast('สร้างรอบนับใหม่'+(zone?(' · โซน '+zone):' · ทั้งคลัง'),'ok'); openSession(d.sessionId); }
   catch(e){toast(e.message,'err');}
 }
 async function openSession(sessionId){
@@ -1197,7 +1252,7 @@ async function openSession(sessionId){
     document.getElementById('countHome').style.display='none';
     document.getElementById('countActive').style.display='block';
     document.getElementById('csTitle').textContent='รอบนับ: '+SESSION.SessionID;
-    document.getElementById('csSub').textContent='รอบที่ '+SESSION.Round+' · สถานะ '+SESSION.Status;
+    document.getElementById('csSub').textContent='โซน '+(SESSION.Zone||'ทั้งคลัง')+' · รอบที่ '+SESSION.Round+' · สถานะ '+SESSION.Status;
     document.getElementById('scanLog').innerHTML='';
     refreshResult();
   }catch(e){toast(e.message,'err');}
@@ -1236,10 +1291,16 @@ async function submitScan(wfdcId){
     let dot='g',msg=d.name||wfdcId;
     if(d.duplicate){dot='y';msg=wfdcId+' (สแกนซ้ำ)';}
     else if(!d.matched){dot='r';msg=wfdcId+' — ไม่พบในระบบ (เกิน)';}
+    else if(d.wrongZone){dot='y';}
+    let tag='';
+    if(d.duplicate) tag=' <span class="chip warn">ซ้ำ</span>';
+    else if(!d.matched) tag=' <span class="chip danger">เกิน</span>';
+    else if(d.wrongZone) tag=' <span class="chip warn">ผิดโซน: อยู่ '+esc(d.assetZone)+'</span>';
     const it=document.createElement('div'); it.className='scan-item';
-    it.innerHTML=`<span class="dot ${dot}"></span><b>${esc(wfdcId)}</b> <span class="muted">${esc(d.name||'')}</span>${d.duplicate?' <span class="chip warn">ซ้ำ</span>':(d.matched?'':' <span class="chip danger">เกิน</span>')}`;
+    it.innerHTML=`<span class="dot ${dot}"></span><b>${esc(wfdcId)}</b> <span class="muted">${esc(d.name||'')}</span>${tag}`;
     log.prepend(it);
-    if(!d.duplicate){ if(navigator.vibrate)navigator.vibrate(60); refreshResult(); }
+    if(d.wrongZone && !d.duplicate){ toast('⚠ '+wfdcId+' ระบบบอกอยู่โซน '+d.assetZone+' แต่กำลังนับโซน '+(SESSION.Zone||'ทั้งคลัง'),'err'); }
+    if(!d.duplicate){ if(navigator.vibrate)navigator.vibrate(d.wrongZone?[60,40,60]:60); refreshResult(); }
   }catch(e){toast(e.message,'err');}
 }
 async function refreshResult(){
@@ -1402,7 +1463,7 @@ function printBarcodes(){
     const cells = jobs.map(({a,box})=>{
       const el = box.querySelector('img,canvas');
       const src = el.tagName==='CANVAS' ? el.toDataURL('image/png') : el.src;
-      const nm = (a.name||a.wfdcId).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const nm = String(a.wfdcId).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       return `<div class="label"><img class="qr" src="${src}"><div class="nm">${nm}</div></div>`;
     }).join('');
     document.body.removeChild(tmp);
