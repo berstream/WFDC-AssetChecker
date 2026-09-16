@@ -248,6 +248,7 @@ td.wrap{white-space:normal}
       <!-- ===== ASSETS ===== -->
       <section id="page-assets" class="page">
         <div class="page-head"><h2>ทะเบียนทรัพย์สิน</h2><div class="spacer" style="flex:1"></div>
+          <button class="btn ghost" onclick="checkMakroDup()">🔎 ตรวจ Makro ซ้ำ</button>
           <button class="btn red" onclick="openAsset()">+ เพิ่มทรัพย์สิน</button></div>
         <div class="card">
           <div class="row">
@@ -429,8 +430,8 @@ td.wrap{white-space:normal}
     <div class="modal-b">
       <input type="hidden" id="mAssetId">
       <div class="grid" style="grid-template-columns:1fr 1fr">
-        <div><label class="f req">เลข WFDC</label><input id="mWfdc" class="inp"></div>
-        <div><label class="f">เลข Makro</label><input id="mMakro" class="inp" placeholder="ถ้ามี"></div>
+        <div><label class="f">เลข WFDC</label><input id="mWfdc" class="inp" placeholder="เว้นว่าง = สร้างให้อัตโนมัติ"></div>
+        <div><label class="f">เลข Makro</label><input id="mMakro" class="inp" placeholder="ถ้ามี (ห้ามซ้ำ)"></div>
       </div>
       <div style="margin-top:10px"><label class="f req">ชื่อทรัพย์สิน</label><input id="mName" class="inp"></div>
       <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px">
@@ -470,6 +471,14 @@ td.wrap{white-space:normal}
     <div class="modal-h"><h3>ผลการนับสต็อก</h3><button class="x" onclick="close_('resultModal')">×</button></div>
     <div class="modal-b" id="resultBody"></div>
     <div class="modal-f"><button class="btn ghost" onclick="close_('resultModal')">ปิด</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="makroDupModal">
+  <div class="modal">
+    <div class="modal-h"><h3>ตรวจสอบเลข Makro ซ้ำ</h3><button class="x" onclick="close_('makroDupModal')">×</button></div>
+    <div class="modal-b" id="makroDupBody"></div>
+    <div class="modal-f"><button class="btn ghost" onclick="close_('makroDupModal')">ปิด</button></div>
   </div>
 </div>
 
@@ -584,6 +593,26 @@ function assetOut_(doc){
   };
 }
 
+/* ---------- WFDC ID auto-gen (WFDC-001, 002, ... ต่อจากเลขสูงสุด) ---------- */
+async function genWfdcId_(){
+  const snap = await db.collection('assets').get();
+  let max = 0;
+  snap.forEach(d=>{
+    const m = /^WFDC-(\d+)$/.exec(String(d.id));
+    if(m){ const n = parseInt(m[1],10); if(n>max) max=n; }
+  });
+  return 'WFDC-' + String(max+1).padStart(3,'0');
+}
+/* เช็คเลข Makro ซ้ำ — คืน wfdcId ของตัวที่ซ้ำ (ยกเว้น excludeWfdc = ตัวเอง) หรือ null ถ้าไม่ซ้ำ */
+async function makroDupWfdc_(makro, excludeWfdc){
+  makro = String(makro||'').trim();
+  if(!makro) return null;
+  const snap = await db.collection('assets').where('makroTag','==',makro).get();
+  let hit = null;
+  snap.forEach(d=>{ if(!hit && d.id !== excludeWfdc) hit = d.id; });
+  return hit;
+}
+
 /* ---------- Firestore-backed actions ---------- */
 const FIRESTORE_ACTIONS = {
   login: async ({empId}) => {
@@ -624,22 +653,29 @@ const FIRESTORE_ACTIONS = {
   },
 
   createAsset: async (req) => {
-    const wfdc = (req.wfdcId||'').trim();
-    if(!wfdc) throw new Error('ต้องกรอกเลขทรัพย์สิน WFDC');
+    let wfdc = (req.wfdcId||'').trim();
+    const makro = (req.makroTag||'').trim();
+    // เช็คเลข Makro ซ้ำ (เฉพาะเมื่อกรอก)
+    if(makro){
+      const mSnap = await db.collection('assets').where('makroTag','==',makro).limit(1).get();
+      if(!mSnap.empty) throw new Error('เลข Makro นี้มีอยู่แล้ว: '+makro);
+    }
+    // ไม่กรอก WFDC ID → gen WFDC-xxx รันต่อจากเลขสูงสุด
+    if(!wfdc){ wfdc = await genWfdcId_(); }
     const ref = db.collection('assets').doc(wfdc);
     const exists = await ref.get();
     if(exists.exists) throw new Error('เลขทรัพย์สิน WFDC นี้มีอยู่แล้ว: '+wfdc);
     const ts = new Date().toISOString();
     const assetId = 'AST-'+Date.now();
     await ref.set({
-      assetId, wfdcId: wfdc, makroTag:req.makroTag||'', name:req.name||'', category:req.category||'',
+      assetId, wfdcId: wfdc, makroTag:makro, name:req.name||'', category:req.category||'',
       zone:req.zone||'', owner:req.owner||'', status:req.status||'ใช้งานปกติ',
       registerDate: (req.registerDate||ts.slice(0,10)),
       photos:[req.photos&&req.photos[0]||'',req.photos&&req.photos[1]||'',req.photos&&req.photos[2]||'',req.photos&&req.photos[3]||''],
       note:req.note||'', createdBy:USER.empId, createdAt:ts, updatedBy:USER.empId, updatedAt:ts
     });
     await ref.collection('logs').add({ timestamp:ts, user:USER.empId, action:'create', oldStatus:'', newStatus:req.status||'ใช้งานปกติ', reason:'', detail:'สร้างรายการใหม่' });
-    return { ok:true, assetId };
+    return { ok:true, assetId, wfdcId:wfdc };
   },
 
   updateAsset: async (req) => {
@@ -650,6 +686,11 @@ const FIRESTORE_ACTIONS = {
     if(!snap.exists) throw new Error('ไม่พบรายการทรัพย์สิน');
     const a = snap.data(), oldStatus = a.status, newStatus = (req.status!==undefined)?req.status:oldStatus;
     if(oldStatus !== newStatus && !req.reason) throw new Error('การเปลี่ยนสถานะต้องระบุเหตุผล');
+    // เช็คเลข Makro ซ้ำ (ยกเว้นตัวเอง) เมื่อมีการส่ง makroTag มาและไม่ว่าง
+    if(req.makroTag!==undefined){
+      const mk = String(req.makroTag).trim();
+      if(mk){ const dupW = await makroDupWfdc_(mk, oldWfdc); if(dupW) throw new Error('เลข Makro นี้ถูกใช้แล้วที่ '+dupW); }
+    }
     const ts = new Date().toISOString();
     const newWfdc = (req.wfdcId!==undefined) ? String(req.wfdcId).trim() : oldWfdc;
     const wfdcChanged = newWfdc && newWfdc !== oldWfdc;
@@ -1082,6 +1123,29 @@ async function loadAssets(){
 }
 function val(id){return document.getElementById(id).value.trim();}
 
+/* ตรวจเลข Makro ซ้ำทั้งระบบ — จับกลุ่ม WFDC ที่ใช้ Makro เดียวกัน */
+async function checkMakroDup(){
+  const body=document.getElementById('makroDupBody');
+  body.innerHTML='<div class="muted"><span class="spin" style="border-color:#888;border-top-color:transparent"></span> กำลังตรวจสอบ...</div>';
+  open_('makroDupModal');
+  try{
+    const all=(await api('listAssets',{})).assets;
+    const map={};
+    all.forEach(a=>{ const m=(a.makroTag||'').trim(); if(m){ (map[m]=map[m]||[]).push(a); } });
+    const dups=Object.keys(map).filter(m=>map[m].length>1).sort();
+    if(!dups.length){ body.innerHTML='<div class="empty">✅ ไม่พบเลข Makro ซ้ำ — ข้อมูลสะอาด</div>'; return; }
+    let h='<div class="muted" style="margin-bottom:10px">พบเลข Makro ซ้ำ '+dups.length+' เลข — แก้ให้ไม่ซ้ำก่อนใช้งาน</div>';
+    dups.forEach(m=>{
+      h+='<div class="card" style="margin-bottom:10px;padding:12px"><b style="color:var(--danger)">Makro: '+esc(m)+'</b>'+
+         '<div class="tbl-wrap" style="margin-top:6px"><table><thead><tr><th>WFDC ID</th><th>ชื่อ</th><th>โซน</th><th></th></tr></thead><tbody>'+
+         map[m].map(a=>`<tr><td><b>${esc(a.wfdcId)}</b></td><td class="wrap">${esc(a.name)}</td><td>${esc(a.zone||'-')}</td>
+           <td><button class="btn ghost sm" onclick="close_('makroDupModal');go('assets');setTimeout(()=>openAsset(${JSON.stringify(a.assetId)}),200)">แก้ไข</button></td></tr>`).join('')+
+         '</tbody></table></div></div>';
+    });
+    body.innerHTML=h;
+  }catch(e){ body.innerHTML='<div class="empty" style="color:var(--danger)">ตรวจสอบไม่สำเร็จ: '+esc(e.message)+'</div>'; }
+}
+
 async function deleteAsset(assetId, wfdcId, name){
   if(USER.role!=='admin'){ toast('เฉพาะผู้ดูแลระบบเท่านั้น','err'); return; }
   if(!confirm('ลบทรัพย์สิน "'+(name||wfdcId)+'" (WFDC: '+wfdcId+') ถาวร?\nรวมรูปและประวัติทั้งหมด — กู้คืนไม่ได้'))return;
@@ -1180,7 +1244,6 @@ function resizeToBase64(file,maxSize,quality){
 }
 async function saveAsset(){
   const wfdc=val('mWfdc'), name=val('mName');
-  if(!wfdc){toast('กรอกเลข WFDC','err');return;}
   if(!name){toast('กรอกชื่อทรัพย์สิน','err');return;}
   const payload={ wfdcId:wfdc, makroTag:val('mMakro'), name, category:val('mCat'),
     zone:val('mZone'), owner:val('mOwner'), status:val('mStatus'), note:val('mNote'),
@@ -1188,21 +1251,24 @@ async function saveAsset(){
   const btn=document.getElementById('amSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
   try{
     if(editing){
+      // ตอนแก้ไข: ถ้าเว้นว่างให้คงเลขเดิม (ไม่ gen ใหม่)
+      if(!wfdc) payload.wfdcId = editing.wfdcId;
       payload.assetId=editing.assetId;
       if(val('mStatus')!==editing.status){
         payload.reason=val('mReason'); payload.detail=val('mDetail');
         if(!payload.reason){toast('เลือกเหตุผลการเปลี่ยนสถานะ','err');btn.disabled=false;btn.textContent='บันทึก';return;}
       }
       // เตือนก่อนถ้าเปลี่ยนเลข WFDC — บาร์โค้ด/QR ที่แปะไปแล้วจะไม่ตรง ต้องพิมพ์ใหม่
-      if(wfdc!==editing.wfdcId){
-        if(!confirm('คุณกำลังเปลี่ยนเลข WFDC:\n\n'+editing.wfdcId+'  →  '+wfdc+'\n\nQR/บาร์โค้ดเดิมที่แปะของจริงจะสแกนไม่ตรง ต้องพิมพ์ใหม่ไปแปะแทน\nยืนยันเปลี่ยนหรือไม่?')){
+      if(payload.wfdcId!==editing.wfdcId){
+        if(!confirm('คุณกำลังเปลี่ยนเลข WFDC:\n\n'+editing.wfdcId+'  →  '+payload.wfdcId+'\n\nQR/บาร์โค้ดเดิมที่แปะของจริงจะสแกนไม่ตรง ต้องพิมพ์ใหม่ไปแปะแทน\nยืนยันเปลี่ยนหรือไม่?')){
           btn.disabled=false; btn.textContent='บันทึก'; return;
         }
       }
       const r=await api('updateAsset',payload);
       toast(r.wfdcChanged?('เปลี่ยนเลข WFDC เป็น '+r.newWfdc+' แล้ว — อย่าลืมพิมพ์ QR ใหม่'):'บันทึกการแก้ไขแล้ว','ok');
     }else{
-      await api('createAsset',payload); toast('เพิ่มทรัพย์สินแล้ว','ok');
+      const r=await api('createAsset',payload);
+      toast(wfdc?'เพิ่มทรัพย์สินแล้ว':('เพิ่มแล้ว · ระบบสร้างเลข '+r.wfdcId),'ok');
     }
     closeAsset(); loadAssets();
   }catch(e){toast(e.message,'err');}
@@ -1463,7 +1529,7 @@ function printBarcodes(){
     const cells = jobs.map(({a,box})=>{
       const el = box.querySelector('img,canvas');
       const src = el.tagName==='CANVAS' ? el.toDataURL('image/png') : el.src;
-      const nm = String(a.wfdcId).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const nm = String(a.makroTag||a.wfdcId).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       return `<div class="label"><img class="qr" src="${src}"><div class="nm">${nm}</div></div>`;
     }).join('');
     document.body.removeChild(tmp);
