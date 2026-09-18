@@ -189,6 +189,101 @@ td.wrap{white-space:normal}
 .spin{width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:-3px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .empty{text-align:center;color:var(--muted);padding:30px 10px}
+
+/* ===== Diff Report (คุณสมบัติใหม่) ===== */
+.cd-tabs{display:flex;gap:4px;background:#e9edf4;border-radius:12px;padding:4px;margin-bottom:16px;width:fit-content}
+.cd-tabs button{border:none;background:transparent;padding:9px 18px;border-radius:9px;font-size:14px;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all .15s}
+.cd-tabs button.on{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(13,42,82,.15)}
+
+.diff-round-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.diff-round-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
+.diff-round-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+.diff-round-card.r1::before{background:var(--navy)}
+.diff-round-card.r2::before{background:#2b5fb0}
+.diff-round-card.r3::before{background:var(--red)}
+.diff-round-card .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
+.diff-round-card .val{margin-top:6px;font-size:14.5px;font-weight:700;color:var(--navy)}
+.diff-round-card .meta{margin-top:8px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.diff-round-card .meta b{color:#1c2b3f}
+.diff-round-card.pending{opacity:.55}
+
+.diff-funnel-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px}
+.diff-funnel-wrap h3{margin:0 0 16px;font-size:14.5px;color:var(--navy);display:flex;align-items:center;gap:8px}
+.diff-funnel-wrap h3 .dot{width:7px;height:7px;border-radius:50%;background:var(--red)}
+.diff-funnel-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:center}
+.diff-funnel-step{text-align:center;padding:14px 8px;border-radius:12px;background:#f7f9fc}
+.diff-funnel-step .n{font-size:30px;font-weight:800;line-height:1;color:var(--navy)}
+.diff-funnel-step .n small{font-size:14px;font-weight:700;color:var(--muted)}
+.diff-funnel-step .t{font-size:12px;color:var(--muted);margin-top:6px;font-weight:600}
+.diff-funnel-step.final{background:linear-gradient(135deg,var(--navy),var(--navy2))}
+.diff-funnel-step.final .n,.diff-funnel-step.final .t{color:#fff}
+.diff-funnel-step.final .n small{color:#cfe0ff}
+.diff-funnel-arrow{display:flex;align-items:center;justify-content:center;color:#c3ccdb;font-size:20px;padding:0 6px}
+
+.diff-donut-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.diff-donut-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 17px;
+  display:flex;flex-direction:column;position:relative;overflow:hidden}
+.diff-donut-card::before{content:"";position:absolute;left:0;top:0;right:0;height:3px}
+.diff-donut-card.creg::before{background:var(--navy)}
+.diff-donut-card.c2::before{background:#2b5fb0}
+.diff-donut-card.c3::before{background:var(--red)}
+.diff-donut-card.cfinal::before{background:linear-gradient(90deg,var(--ok),var(--navy))}
+.diff-donut-card h4{margin:0 0 12px;font-size:12.8px;color:var(--navy);display:flex;align-items:center;gap:7px;font-weight:700}
+.diff-donut-card h4 .dot{width:7px;height:7px;border-radius:50%}
+.diff-donut-body{display:flex;align-items:center;gap:12px;flex:1}
+.diff-donut{
+  --p:0; --c:var(--ok);
+  width:86px;height:86px;border-radius:50%;flex:0 0 auto;position:relative;
+  background:conic-gradient(var(--c) calc(var(--p)*1%),#f1ecec 0);
+}
+.diff-donut::before{content:"";position:absolute;inset:10px;background:#fff;border-radius:50%;box-shadow:inset 0 1px 3px rgba(13,42,82,.06)}
+.diff-donut .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.diff-donut .val b{font-size:16px;font-weight:800;color:var(--navy);line-height:1}
+.diff-donut .val span{font-size:8.5px;color:var(--muted);font-weight:700;margin-top:2px}
+.diff-donut-legend{display:flex;flex-direction:column;gap:7px;font-size:11px;flex:1;min-width:0}
+.diff-donut-legend .row{display:flex;align-items:center;gap:6px}
+.diff-donut-legend .sw{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+.diff-donut-legend .row b{margin-left:auto;color:#1c2b3f;font-weight:800;white-space:nowrap}
+.diff-donut-foot{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:10.5px;color:var(--muted);
+  display:flex;justify-content:space-between;gap:6px}
+.diff-donut-foot b{color:var(--navy)}
+
+.diff-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.diff-filter-bar input[type=search]{flex:1;min-width:180px;border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:13.5px}
+.diff-count-pill{background:#eef2f9;color:var(--navy);font-weight:700;font-size:12.5px;padding:6px 12px;border-radius:20px}
+
+table.diff-tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.diff-tbl thead th{background:#f7f9fc;color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;
+  letter-spacing:.4px;text-align:left;padding:11px 12px;border-bottom:2px solid var(--line);white-space:nowrap}
+table.diff-tbl thead th.c{text-align:center}
+table.diff-tbl tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.diff-tbl tbody tr:hover{background:#fafbfd}
+.diff-wfdc{font-weight:800;color:var(--navy);font-size:12.5px}
+.diff-makro{font-size:11px;color:var(--muted)}
+.diff-zone-chip{display:inline-block;background:#eef2f9;color:var(--navy2);font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px}
+.diff-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:7px;font-weight:800;font-size:12.5px}
+.diff-badge.miss{background:#fdeceb;color:var(--danger)}
+.diff-badge.extra{background:#fff4de;color:var(--warn)}
+.diff-badge.ok{background:#e7f7ee;color:var(--ok)}
+.diff-badge.na{background:#f1f3f7;color:#b7c0cd;font-weight:600;font-size:10.5px}
+.diff-badge.pending{background:#eef2f9;color:#8494a8;font-weight:600;font-size:10px}
+.diff-summary-tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:20px;white-space:nowrap}
+.diff-summary-tag.resolved{background:#e7f7ee;color:var(--ok)}
+.diff-summary-tag.resolved .r{background:var(--ok);color:#fff;border-radius:5px;padding:1px 6px;font-size:10px}
+.diff-summary-tag.open{background:#fdeceb;color:var(--danger)}
+.diff-summary-tag.open .r{background:var(--danger);color:#fff;border-radius:5px;padding:1px 6px;font-size:10px}
+.diff-legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+.diff-legend span{display:inline-flex;align-items:center;gap:6px}
+.diff-legend .sw{width:16px;height:16px;border-radius:5px;display:inline-block}
+
+@media(max-width:1050px){ .diff-donut-row{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:820px){
+  .diff-round-picker{grid-template-columns:1fr}
+  .diff-funnel-row{grid-template-columns:1fr}
+  .diff-funnel-arrow{transform:rotate(90deg);padding:4px 0}
+}
+@media(max-width:560px){ .diff-donut-row{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -271,37 +366,172 @@ td.wrap{white-space:normal}
         </div>
         <div id="cdEmpty" class="empty" style="display:none">ยังไม่มีรอบนับ</div>
         <div id="cdBody" style="display:none">
-          <div class="card">
-            <div class="row" style="justify-content:space-between;flex-wrap:wrap">
-              <div><b id="cdTitle" style="font-size:16px"></b><div class="muted" id="cdSub"></div></div>
-              <div class="row" style="gap:8px">
-                <button class="btn ghost sm" onclick="exportCountPDF()">📄 Export PDF</button>
-                <button class="btn ghost sm" onclick="exportCountExcel()">📊 Export Excel</button>
+
+          <div class="cd-tabs">
+            <button id="cdTabBtnOverview" class="on" onclick="cdSwitchTab('overview')">ภาพรวม</button>
+            <button id="cdTabBtnDiff" onclick="cdSwitchTab('diff')">รายงาน Diff (3 รอบ)</button>
+          </div>
+
+          <!-- ===== TAB: ภาพรวม (ของเดิม) ===== -->
+          <div id="cdTabOverview">
+            <div class="card">
+              <div class="row" style="justify-content:space-between;flex-wrap:wrap">
+                <div><b id="cdTitle" style="font-size:16px"></b><div class="muted" id="cdSub"></div></div>
+                <div class="row" style="gap:8px">
+                  <button class="btn ghost sm" onclick="exportCountPDF()">📄 Export PDF</button>
+                  <button class="btn ghost sm" onclick="exportCountExcel()">📊 Export Excel</button>
+                </div>
+              </div>
+              <div id="cdExMsg" class="muted" style="margin-top:8px"></div>
+            </div>
+
+            <!-- progress -->
+            <div class="card">
+              <div class="row" style="justify-content:space-between"><b>ความคืบหน้า (real-time)</b>
+                <span id="cdProgTxt" class="muted"></span></div>
+              <div style="background:#e8edf5;border-radius:99px;height:16px;overflow:hidden;margin:10px 0">
+                <div id="cdProgBar" style="height:100%;width:0;background:var(--ok);transition:width .3s;border-radius:99px"></div>
+              </div>
+              <div class="row" style="gap:20px;flex-wrap:wrap;margin-top:6px">
+                <div><b id="cdFound" style="color:var(--ok)">0</b> <span class="muted">พบ</span> <span id="cdFoundPct" class="muted"></span></div>
+                <div><b id="cdMissing" style="color:var(--danger)">0</b> <span class="muted">ขาด</span> <span id="cdMissingPct" class="muted"></span></div>
+                <div><b id="cdExtra" style="color:var(--warn)">0</b> <span class="muted">เกิน</span> <span id="cdExtraPct" class="muted"></span></div>
+                <div><b id="cdTotal">0</b> <span class="muted">ทั้งหมด</span></div>
               </div>
             </div>
-            <div id="cdExMsg" class="muted" style="margin-top:8px"></div>
-          </div>
 
-          <!-- progress -->
-          <div class="card">
-            <div class="row" style="justify-content:space-between"><b>ความคืบหน้า (real-time)</b>
-              <span id="cdProgTxt" class="muted"></span></div>
-            <div style="background:#e8edf5;border-radius:99px;height:16px;overflow:hidden;margin:10px 0">
-              <div id="cdProgBar" style="height:100%;width:0;background:var(--ok);transition:width .3s;border-radius:99px"></div>
-            </div>
-            <div class="row" style="gap:20px;flex-wrap:wrap;margin-top:6px">
-              <div><b id="cdFound" style="color:var(--ok)">0</b> <span class="muted">พบ</span> <span id="cdFoundPct" class="muted"></span></div>
-              <div><b id="cdMissing" style="color:var(--danger)">0</b> <span class="muted">ขาด</span> <span id="cdMissingPct" class="muted"></span></div>
-              <div><b id="cdExtra" style="color:var(--warn)">0</b> <span class="muted">เกิน</span> <span id="cdExtraPct" class="muted"></span></div>
-              <div><b id="cdTotal">0</b> <span class="muted">ทั้งหมด</span></div>
+            <!-- compare + chart -->
+            <div class="charts">
+              <div class="chart-card"><h3>เทียบรอบก่อน</h3><div id="cdCompare"></div></div>
+              <div class="chart-card"><h3>%ความแม่นยำ ย้อนหลัง</h3><canvas id="cdChart"></canvas></div>
             </div>
           </div>
 
-          <!-- compare + chart -->
-          <div class="charts">
-            <div class="chart-card"><h3>เทียบรอบก่อน</h3><div id="cdCompare"></div></div>
-            <div class="chart-card"><h3>%ความแม่นยำ ย้อนหลัง</h3><canvas id="cdChart"></canvas></div>
+          <!-- ===== TAB: รายงาน Diff (ใหม่) ===== -->
+          <div id="cdTabDiff" style="display:none">
+
+            <div id="diffNoRounds" class="empty" style="display:none">รอบนี้นับแค่รอบเดียว (ยังไม่มีการนับซ้ำ) — เมื่อกด "นับซ้ำ" ที่หน้านับสต็อกอย่างน้อย 1 ครั้ง รายงาน Diff จะแสดงที่นี่</div>
+
+            <div id="diffContent" style="display:none">
+              <div class="diff-round-picker">
+                <div class="diff-round-card r1" id="diffRoundCard1">
+                  <div class="lbl">① Regular Count</div>
+                  <div class="val" id="diffR1Val">–</div>
+                  <div class="meta"><span>นับแล้ว <b id="diffR1Total">0</b></span><span>พบ Diff <b id="diffR1Diff" style="color:var(--danger)">0</b></span></div>
+                </div>
+                <div class="diff-round-card r2" id="diffRoundCard2">
+                  <div class="lbl">② Count 2 (นับซ้ำเฉพาะ Diff)</div>
+                  <div class="val" id="diffR2Val">–</div>
+                  <div class="meta"><span>นับซ้ำ <b id="diffR2Total">0</b></span><span>ยังคง Diff <b id="diffR2Diff" style="color:var(--warn)">0</b></span></div>
+                </div>
+                <div class="diff-round-card r3" id="diffRoundCard3">
+                  <div class="lbl">③ Count 3 (นับซ้ำเฉพาะ Diff)</div>
+                  <div class="val" id="diffR3Val">–</div>
+                  <div class="meta"><span>นับซ้ำ <b id="diffR3Total">0</b></span><span>ยังคง Diff <b id="diffR3Diff" style="color:var(--danger)">0</b></span></div>
+                </div>
+              </div>
+
+              <div class="diff-funnel-wrap">
+                <h3><span class="dot"></span> สรุปเส้นทางการแก้ปัญหา (Resolution Funnel)</h3>
+                <div class="diff-funnel-row">
+                  <div class="diff-funnel-step"><div class="n" id="fnRegular">0</div><div class="t">Diff หลัง Regular Count</div></div>
+                  <div class="diff-funnel-arrow">→</div>
+                  <div class="diff-funnel-step"><div class="n" id="fnCount2">0</div><div class="t">แก้ไขได้ที่ Count 2</div></div>
+                  <div class="diff-funnel-arrow">→</div>
+                  <div class="diff-funnel-step"><div class="n" id="fnCount3">0</div><div class="t">แก้ไขได้ที่ Count 3</div></div>
+                  <div class="diff-funnel-arrow">→</div>
+                  <div class="diff-funnel-step final"><div class="n" id="fnOpen">0</div><div class="t">ยังคง Diff ณ ปัจจุบัน</div></div>
+                </div>
+              </div>
+
+              <div class="diff-donut-row">
+                <div class="diff-donut-card creg">
+                  <h4><span class="dot" style="background:var(--navy)"></span> Regular Count · อัตรา Diff ที่พบ</h4>
+                  <div class="diff-donut-body">
+                    <div class="diff-donut" id="donutReg" style="--p:0;--c:var(--navy)"><div class="val"><b id="donutRegPct">0%</b><span>Diff</span></div></div>
+                    <div class="diff-donut-legend">
+                      <div class="row"><span class="sw" style="background:var(--navy)"></span> พบ Diff <b id="donutRegDiff">0</b></div>
+                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ตรงระบบ <b id="donutRegOk">0</b></div>
+                    </div>
+                  </div>
+                  <div class="diff-donut-foot"><span>นับทั้งหมดครั้งแรก</span><b id="donutRegBase">0 รายการ</b></div>
+                </div>
+
+                <div class="diff-donut-card c2">
+                  <h4><span class="dot" style="background:#2b5fb0"></span> Count 2 · สัดส่วนที่แก้ได้</h4>
+                  <div class="diff-donut-body">
+                    <div class="diff-donut" id="donutC2" style="--p:0;--c:#2b5fb0"><div class="val"><b id="donutC2Pct">0%</b><span>แก้แล้ว</span></div></div>
+                    <div class="diff-donut-legend">
+                      <div class="row"><span class="sw" style="background:#2b5fb0"></span> แก้แล้ว <b id="donutC2Ok">0</b></div>
+                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ยังคง Diff <b id="donutC2Bad">0</b></div>
+                    </div>
+                  </div>
+                  <div class="diff-donut-foot"><span>นับซ้ำเฉพาะ Diff จาก Regular</span><b id="donutC2Base">0 รายการ</b></div>
+                </div>
+
+                <div class="diff-donut-card c3">
+                  <h4><span class="dot" style="background:var(--red)"></span> Count 3 · สัดส่วนที่แก้ได้</h4>
+                  <div class="diff-donut-body">
+                    <div class="diff-donut" id="donutC3" style="--p:0;--c:var(--red)"><div class="val"><b id="donutC3Pct">0%</b><span>แก้แล้ว</span></div></div>
+                    <div class="diff-donut-legend">
+                      <div class="row"><span class="sw" style="background:var(--red)"></span> แก้แล้ว <b id="donutC3Ok">0</b></div>
+                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ยังคง Diff <b id="donutC3Bad">0</b></div>
+                    </div>
+                  </div>
+                  <div class="diff-donut-foot"><span>นับซ้ำเฉพาะ Diff จาก Count 2</span><b id="donutC3Base">0 รายการ</b></div>
+                </div>
+
+                <div class="diff-donut-card cfinal">
+                  <h4><span class="dot" style="background:var(--ok)"></span> ผลรวมสุดท้าย (Overall Result)</h4>
+                  <div class="diff-donut-body">
+                    <div class="diff-donut" id="donutFinal" style="--p:0;--c:var(--ok)"><div class="val"><b id="donutFinalPct">0%</b><span>แก้แล้ว</span></div></div>
+                    <div class="diff-donut-legend">
+                      <div class="row"><span class="sw" style="background:var(--ok)"></span> แก้แล้ว <b id="donutFinalOk">0</b></div>
+                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ยังไม่แก้ <b id="donutFinalBad">0</b></div>
+                      <div class="row" style="opacity:.65"><span class="sw" style="background:var(--navy)"></span> Diff ทั้งหมด <b id="donutFinalTotal">0</b></div>
+                    </div>
+                  </div>
+                  <div class="diff-donut-foot"><span>ความแม่นยำ Precount ตั้งต้น</span><b id="donutFinalAcc">0%</b></div>
+                </div>
+              </div>
+
+              <div class="diff-filter-bar">
+                <div class="seg">
+                  <button class="on" id="diffFilterAll" onclick="diffSetFilter('all')">ทั้งหมด</button>
+                  <button id="diffFilterOpen" onclick="diffSetFilter('open')">ยังไม่แก้</button>
+                  <button id="diffFilterResolved" onclick="diffSetFilter('resolved')">แก้แล้ว</button>
+                </div>
+                <select id="diffZone" class="inp" style="width:auto" onchange="diffRenderTable()"></select>
+                <input type="search" id="diffSearch" placeholder="ค้นหา WFDC ID / เลข Makro / ชื่อทรัพย์สิน..." oninput="diffRenderTable()">
+                <div class="spacer" style="flex:1"></div>
+                <span class="diff-count-pill" id="diffCountPill">แสดง 0 รายการ</span>
+              </div>
+
+              <div class="card" style="padding:0;overflow:hidden">
+                <div class="tbl-wrap">
+                  <table class="diff-tbl">
+                    <thead><tr>
+                      <th>ทรัพย์สิน</th><th class="c">โซน</th><th class="c">Precount</th>
+                      <th class="c">Regular</th><th class="c">Count 2</th><th class="c">Count 3</th><th>สรุปผล</th>
+                    </tr></thead>
+                    <tbody id="diffTbody"></tbody>
+                  </table>
+                </div>
+                <div class="diff-legend">
+                  <span><span class="sw" style="background:#e7f7ee"></span> ✓ ตรงกับระบบ (นับเจอ ไม่มี Diff)</span>
+                  <span><span class="sw" style="background:#fdeceb"></span> − ขาด (มีในระบบ แต่นับไม่เจอ)</span>
+                  <span><span class="sw" style="background:#fff4de"></span> + เกิน (นับเจอ แต่ไม่มีในระบบ)</span>
+                  <span><span class="sw" style="background:#f1f3f7"></span> — ไม่ต้องนับซ้ำ / ยังไม่ถึงรอบนี้</span>
+                </div>
+              </div>
+
+              <div class="row" style="justify-content:flex-end;gap:8px;margin-top:14px">
+                <button class="btn ghost sm" onclick="exportDiffPDF()">📄 Export PDF (Diff Report)</button>
+                <button class="btn ghost sm" onclick="exportDiffExcel()">📊 Export Excel (Diff Report)</button>
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 
@@ -1405,6 +1635,15 @@ async function doClose(){
 
 /* ============ COUNT DASHBOARD ============ */
 let cdSessions=[], cdCurrent=null, cdUnsub=null, cdChartObj=null, cdLastResult=null;
+let cdActiveTab='overview';
+function cdSwitchTab(tab){
+  cdActiveTab=tab;
+  document.getElementById('cdTabBtnOverview').classList.toggle('on', tab==='overview');
+  document.getElementById('cdTabBtnDiff').classList.toggle('on', tab==='diff');
+  document.getElementById('cdTabOverview').style.display = tab==='overview' ? 'block':'none';
+  document.getElementById('cdTabDiff').style.display = tab==='diff' ? 'block':'none';
+  if(tab==='diff' && cdCurrent) cdLoadDiff(cdCurrent.SessionID);
+}
 async function loadCountDash(){
   try{
     cdSessions=(await api('listSessions')).sessions;
@@ -1444,6 +1683,7 @@ async function cdRefresh(sid){
     document.getElementById('cdProgTxt').textContent='นับไปแล้ว '+r.found+' / '+r.total+' ชิ้น ('+prog.toFixed(1)+'%)';
     cdRenderCompare(sid, r);
     cdRenderChart(sid);
+    if(cdActiveTab==='diff') cdLoadDiff(sid);
   }catch(e){}
 }
 function cdFindPrev_(sid){
@@ -1483,6 +1723,266 @@ async function cdRenderChart(sid){
 }
 // ยกเลิก listener เมื่อออกจากหน้า (กัน memory leak / อ่าน quota เปล่า)
 function cdCleanup(){ if(cdUnsub){ cdUnsub(); cdUnsub=null; } }
+
+/* ============ DIFF REPORT (Precount → Regular → Count 2 → Count 3) ============
+   โมเดลข้อมูลเดิม: "นับซ้ำ" (recheckSession) เพิ่ม round ในรอบนับเดียวกัน (session เดียว)
+   ดังนั้น Regular=round 1, Count2=round 2, Count3=round 3 ของ session เดียวกัน
+   items ของแต่ละ round จะถูกเก็บแยกเป็น doc คนละใบ (wfdcId+'_r'+round) จึงเทียบ round ต่อ round ได้ตรง ๆ */
+let diffData=null, diffFilter='all';
+
+// สถานะรายรอบของ 1 แถว: 'na' ยังไม่เกี่ยวข้อง(ก่อนพบdiff/แก้แล้ว) | 'pending' ยังไม่ถึงรอบนี้ | 'miss'/'extra' ยังเป็น diff | 'ok' แก้แล้ว
+function diffRoundStatus_(type, firstBad, roundsDone, hasFn){
+  const st=[null,null,null]; let resolved=false, resolvedAt=null;
+  for(let r=1;r<=3;r++){
+    if(r<firstBad){ st[r-1]='na'; continue; }
+    if(resolved){ st[r-1]='na'; continue; }
+    if(r===firstBad){ st[r-1]= type==='missing'?'miss':'extra'; continue; }
+    if(roundsDone<r){ st[r-1]='pending'; continue; }
+    const found = hasFn(r);
+    const good = type==='missing' ? found : !found; // ขาด: แก้แล้วถ้านับเจอ / เกิน: แก้แล้วถ้าไม่โผล่ซ้ำ
+    if(good){ st[r-1]='ok'; resolved=true; resolvedAt='Count '+r; }
+    else{ st[r-1]= type==='missing'?'miss':'extra'; }
+  }
+  return {st, resolved, resolvedAt};
+}
+
+async function cdBuildDiffData_(sid){
+  const sess = cdSessions.find(s=>s.SessionID===sid);
+  const roundsDone = sess ? (sess.Round||1) : 1;
+  const sessZone = sess ? (sess.Zone||'') : '';
+  const [assetsSnap, itemsSnap] = await Promise.all([
+    db.collection('assets').get(),
+    db.collection('sessions').doc(sid).collection('items').get()
+  ]);
+  const expected = assetsSnap.docs.map(d=>({wfdcId:d.id, ...d.data()}))
+    .filter(a=>a.status!=='จำหน่ายแล้ว')
+    .filter(a=> sessZone ? (a.zone===sessZone) : true);
+  const expectedMap={}; expected.forEach(a=>expectedMap[a.wfdcId]=a);
+
+  const scanSet={1:new Set(),2:new Set(),3:new Set()};
+  itemsSnap.docs.forEach(d=>{ const it=d.data(); if(it.found===true && it.round>=1 && it.round<=3) scanSet[it.round].add(it.wfdcId); });
+
+  // ขาด: ของในระบบที่ไม่ถูกนับเจอในรอบ Regular (round 1)
+  const missingRows = expected.filter(a=>!scanSet[1].has(a.wfdcId)).map(a=>{
+    const {st,resolved,resolvedAt}=diffRoundStatus_('missing',1,roundsDone,r=>scanSet[r].has(a.wfdcId));
+    return { ...a, type:'missing', r:st, resolved, resolvedAt };
+  });
+
+  // เกิน: สแกนเจอแต่ไม่มีในระบบ — จับตั้งแต่รอบแรกที่เจอ (ปกติคือรอบ 1)
+  const extraFirst={};
+  [1,2,3].forEach(r=>{ if(roundsDone>=r) scanSet[r].forEach(w=>{ if(!expectedMap[w] && !(w in extraFirst)) extraFirst[w]=r; }); });
+  const extraRows = Object.keys(extraFirst).map(w=>{
+    const firstR=extraFirst[w];
+    const {st,resolved,resolvedAt}=diffRoundStatus_('extra',firstR,roundsDone,r=>scanSet[r].has(w));
+    return { wfdcId:w, name:'(ไม่มีในระบบ)', category:'-', zone:'-', makroTag:'-', assetId:'', type:'extra', r:st, resolved, resolvedAt };
+  });
+
+  const all = missingRows.concat(extraRows).sort((a,b)=> a.wfdcId<b.wfdcId?-1:1);
+  const diffAfterRegular = all.filter(x=>x.r[0]==='miss'||x.r[0]==='extra').length;
+  const resolvedAtC2 = all.filter(x=>x.resolvedAt==='Count 2').length;
+  const resolvedAtC3 = all.filter(x=>x.resolvedAt==='Count 3').length;
+  const stillOpen = all.filter(x=>!x.resolved).length;
+  const baseC2 = diffAfterRegular; // ฐานของ Count2 = diff ทั้งหมดที่พบตอน Regular
+  const baseC3 = all.filter(x=> (x.r[0]==='miss'||x.r[0]==='extra') && !(x.resolvedAt==='Count 2')).length; // ยังไม่แก้หลัง Count2
+  return { session:sess, roundsDone, expectedTotal:expected.length, all,
+    diffAfterRegular, resolvedAtC2, resolvedAtC3, stillOpen, baseC2, baseC3 };
+}
+
+function diffPct_(n,t){ return t? +( (n/t*100).toFixed(1) ) : 0; }
+
+async function cdLoadDiff(sid){
+  const noR=document.getElementById('diffNoRounds'), body=document.getElementById('diffContent');
+  try{
+    diffData = await cdBuildDiffData_(sid);
+  }catch(e){ toast(e.message,'err'); return; }
+  const d=diffData;
+  if(d.diffAfterRegular===0 && d.roundsDone<2){
+    // ไม่มี diff เลย และยังไม่มีการนับซ้ำ — ยังไม่มีอะไรให้รายงาน
+    noR.style.display='block'; body.style.display='none'; return;
+  }
+  noR.style.display='none'; body.style.display='block';
+
+  // การ์ดสรุปรายรอบ
+  document.getElementById('diffR1Val').textContent = d.expectedTotal+' รายการ';
+  document.getElementById('diffR1Total').textContent = d.expectedTotal;
+  document.getElementById('diffR1Diff').textContent = d.diffAfterRegular;
+
+  const c2=document.getElementById('diffRoundCard2'), c3=document.getElementById('diffRoundCard3');
+  if(d.roundsDone>=2){
+    c2.classList.remove('pending');
+    document.getElementById('diffR2Val').textContent = d.baseC2+' รายการ';
+    document.getElementById('diffR2Total').textContent = d.baseC2;
+    document.getElementById('diffR2Diff').textContent = d.baseC2-d.resolvedAtC2;
+  }else{
+    c2.classList.add('pending');
+    document.getElementById('diffR2Val').textContent = 'ยังไม่เริ่มนับซ้ำ';
+    document.getElementById('diffR2Total').textContent='0'; document.getElementById('diffR2Diff').textContent='0';
+  }
+  if(d.roundsDone>=3){
+    c3.classList.remove('pending');
+    document.getElementById('diffR3Val').textContent = d.baseC3+' รายการ';
+    document.getElementById('diffR3Total').textContent = d.baseC3;
+    document.getElementById('diffR3Diff').textContent = d.baseC3-d.resolvedAtC3;
+  }else{
+    c3.classList.add('pending');
+    document.getElementById('diffR3Val').textContent = 'ยังไม่เริ่มนับซ้ำ';
+    document.getElementById('diffR3Total').textContent='0'; document.getElementById('diffR3Diff').textContent='0';
+  }
+
+  // Funnel
+  document.getElementById('fnRegular').textContent = d.diffAfterRegular;
+  document.getElementById('fnCount2').innerHTML = d.resolvedAtC2+' <small>แก้แล้ว</small>';
+  document.getElementById('fnCount3').innerHTML = d.resolvedAtC3+' <small>แก้แล้ว</small>';
+  document.getElementById('fnOpen').textContent = d.stillOpen;
+
+  // Donut: Regular (อัตรา diff จากยอดนับทั้งหมด)
+  const regPct=diffPct_(d.diffAfterRegular, d.expectedTotal);
+  document.getElementById('donutReg').style.setProperty('--p', regPct);
+  document.getElementById('donutRegPct').textContent = regPct+'%';
+  document.getElementById('donutRegDiff').textContent = d.diffAfterRegular;
+  document.getElementById('donutRegOk').textContent = d.expectedTotal-d.diffAfterRegular;
+  document.getElementById('donutRegBase').textContent = d.expectedTotal+' รายการ';
+
+  // Donut: Count2
+  const c2Pct=diffPct_(d.resolvedAtC2, d.baseC2);
+  document.getElementById('donutC2').style.setProperty('--p', c2Pct);
+  document.getElementById('donutC2Pct').textContent = c2Pct+'%';
+  document.getElementById('donutC2Ok').textContent = d.resolvedAtC2;
+  document.getElementById('donutC2Bad').textContent = d.baseC2-d.resolvedAtC2;
+  document.getElementById('donutC2Base').textContent = d.baseC2+' รายการ';
+
+  // Donut: Count3
+  const c3Pct=diffPct_(d.resolvedAtC3, d.baseC3);
+  document.getElementById('donutC3').style.setProperty('--p', c3Pct);
+  document.getElementById('donutC3Pct').textContent = c3Pct+'%';
+  document.getElementById('donutC3Ok').textContent = d.resolvedAtC3;
+  document.getElementById('donutC3Bad').textContent = d.baseC3-d.resolvedAtC3;
+  document.getElementById('donutC3Base').textContent = d.baseC3+' รายการ';
+
+  // Donut: ผลรวมสุดท้าย
+  const finalResolved = d.diffAfterRegular-d.stillOpen;
+  const finalPct=diffPct_(finalResolved, d.diffAfterRegular);
+  document.getElementById('donutFinal').style.setProperty('--p', finalPct);
+  document.getElementById('donutFinalPct').textContent = finalPct+'%';
+  document.getElementById('donutFinalOk').textContent = finalResolved;
+  document.getElementById('donutFinalBad').textContent = d.stillOpen;
+  document.getElementById('donutFinalTotal').textContent = d.diffAfterRegular;
+  document.getElementById('donutFinalAcc').textContent = diffPct_(d.expectedTotal-d.diffAfterRegular, d.expectedTotal)+'%';
+
+  // ตัวกรองโซน
+  const zoneSel=document.getElementById('diffZone');
+  const zones=[...new Set(d.all.map(x=>x.zone).filter(z=>z && z!=='-'))].sort();
+  zoneSel.innerHTML='<option value="">ทุกโซน</option>'+zones.map(z=>`<option value="${esc(z)}">${esc(z)}</option>`).join('');
+
+  diffRenderTable();
+}
+
+function diffSetFilter(f){
+  diffFilter=f;
+  ['All','Open','Resolved'].forEach(k=>document.getElementById('diffFilter'+k).classList.remove('on'));
+  document.getElementById('diffFilter'+f.charAt(0).toUpperCase()+f.slice(1)).classList.add('on');
+  diffRenderTable();
+}
+
+function diffBadge_(v){
+  if(v==='ok') return '<span class="diff-badge ok">✓</span>';
+  if(v==='miss') return '<span class="diff-badge miss">−</span>';
+  if(v==='extra') return '<span class="diff-badge extra">+</span>';
+  if(v==='pending') return '<span class="diff-badge pending">รอ</span>';
+  return '<span class="diff-badge na">—</span>';
+}
+
+function diffRenderTable(){
+  if(!diffData) return;
+  const q=(val('diffSearch')||'').toLowerCase();
+  const zone=val('diffZone');
+  let rows=diffData.all.filter(x=>{
+    if(diffFilter==='open' && x.resolved) return false;
+    if(diffFilter==='resolved' && !x.resolved) return false;
+    if(zone && x.zone!==zone) return false;
+    if(q && (x.wfdcId+' '+(x.makroTag||'')+' '+(x.name||'')).toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+  document.getElementById('diffCountPill').textContent='แสดง '+rows.length+' รายการ';
+  document.getElementById('diffTbody').innerHTML = rows.map(a=>{
+    const precount = a.type==='extra' ? diffBadge_('na') : diffBadge_('ok');
+    const summary = a.resolved
+      ? `<span class="diff-summary-tag resolved">แก้แล้ว <span class="r">${esc(a.resolvedAt)}</span></span>`
+      : `<span class="diff-summary-tag open">ยังไม่แก้ <span class="r">${diffData.roundsDone>=3?'3 รอบ':'รอนับต่อ'}</span></span>`;
+    return `<tr>
+      <td><span class="diff-wfdc">${esc(a.wfdcId)}</span> ${a.makroTag&&a.makroTag!=='-'?`<span class="diff-makro">· ${esc(a.makroTag)}</span>`:''}<br><span>${esc(a.name||'')}</span></td>
+      <td class="c">${a.zone&&a.zone!=='-'?`<span class="diff-zone-chip">${esc(a.zone)}</span>`:'-'}</td>
+      <td class="c">${precount}</td>
+      <td class="c">${diffBadge_(a.r[0])}</td>
+      <td class="c">${diffBadge_(a.r[1])}</td>
+      <td class="c">${diffBadge_(a.r[2])}</td>
+      <td>${summary}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="empty">ไม่พบรายการที่ตรงตัวกรอง</td></tr>';
+}
+
+/* ---- Export: Diff Report PDF/Excel ---- */
+async function exportDiffPDF(){
+  if(!diffData){ toast('ยังไม่มีข้อมูล Diff','err'); return; }
+  const d=diffData, sess=d.session;
+  try{
+    const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    registerThaiFont_(doc);
+    doc.setFont('Sarabun','bold'); doc.setFontSize(15); doc.text('รายงาน Diff การนับสต็อก (Precount → Regular → Count2 → Count3)',14,16);
+    doc.setFont('Sarabun','normal'); doc.setFontSize(9);
+    doc.text('CJ LOGISTICS · WFDC    รอบนับ: '+(sess?sess.SessionID:'-')+'    ผู้นับ: '+(sess?sess.CreatedBy:'-')+'    วันที่: '+(sess?fmtDate(sess.CreatedDate):'-'),14,22);
+    doc.text(`Diff หลัง Regular: ${d.diffAfterRegular}    แก้ที่ Count2: ${d.resolvedAtC2}    แก้ที่ Count3: ${d.resolvedAtC3}    ยังคง Diff: ${d.stillOpen}`,14,28);
+    const lbl=v=>({ok:'✓',miss:'-',extra:'+',pending:'รอ',na:'-'}[v]||'-');
+    const body=d.all.map(a=>[a.wfdcId, a.makroTag&&a.makroTag!=='-'?a.makroTag:'-', a.name||'', a.zone&&a.zone!=='-'?a.zone:'-',
+      lbl(a.r[0]), lbl(a.r[1]), lbl(a.r[2]), a.resolved?('แก้แล้ว ('+a.resolvedAt+')'):'ยังไม่แก้']);
+    doc.autoTable({
+      startY:34, head:[['WFDC','Makro','ชื่อ','โซน','Regular','Count 2','Count 3','สรุปผล']],
+      body, styles:{font:'Sarabun',fontStyle:'normal',fontSize:8,cellPadding:2,valign:'middle'},
+      headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]},
+      didParseCell:function(dc){
+        if(dc.section==='body' && dc.column.index>=4 && dc.column.index<=6){
+          const v=dc.cell.raw;
+          if(v==='-') dc.cell.styles.textColor=[200,0,0];
+          else if(v==='+') dc.cell.styles.textColor=[200,140,0];
+          else if(v==='✓') dc.cell.styles.textColor=[0,140,0];
+        }
+        if(dc.section==='body' && dc.column.index===7){
+          const v=String(dc.cell.raw);
+          dc.cell.styles.textColor = v.indexOf('แก้แล้ว')===0 ? [0,140,0] : [200,0,0];
+        }
+      }
+    });
+    doc.save('DiffReport_'+(sess?sess.SessionID:'session')+'_'+today()+'.pdf');
+    toast('ดาวน์โหลด PDF แล้ว','ok');
+  }catch(e){ toast(e.message,'err'); }
+}
+async function exportDiffExcel(){
+  if(!diffData){ toast('ยังไม่มีข้อมูล Diff','err'); return; }
+  const d=diffData, sess=d.session;
+  try{
+    const wb=new ExcelJS.Workbook();
+    const s1=wb.addWorksheet('สรุป');
+    s1.addRow(['รายงาน Diff การนับสต็อก']); s1.getRow(1).font={bold:true,size:14};
+    s1.addRow(['รอบนับ', sess?sess.SessionID:'-']); s1.addRow(['ผู้นับ', sess?sess.CreatedBy:'-']); s1.addRow(['วันที่', sess?fmtDate(sess.CreatedDate):'-']);
+    s1.addRow([]);
+    s1.addRow(['Diff หลัง Regular', d.diffAfterRegular]);
+    s1.addRow(['แก้ไขได้ที่ Count 2', d.resolvedAtC2]);
+    s1.addRow(['แก้ไขได้ที่ Count 3', d.resolvedAtC3]);
+    s1.addRow(['ยังคง Diff', d.stillOpen]);
+    const s2=wb.addWorksheet('รายการ Diff');
+    s2.columns=[{header:'WFDC',width:14},{header:'Makro',width:14},{header:'ชื่อ',width:26},{header:'โซน',width:10},
+      {header:'Regular',width:10},{header:'Count 2',width:10},{header:'Count 3',width:10},{header:'สรุปผล',width:20}];
+    s2.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; s2.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0D2A52'}};
+    const lbl=v=>({ok:'✓',miss:'-',extra:'+',pending:'รอ',na:'-'}[v]||'-');
+    d.all.forEach(a=>{
+      s2.addRow([a.wfdcId, a.makroTag&&a.makroTag!=='-'?a.makroTag:'-', a.name||'', a.zone&&a.zone!=='-'?a.zone:'-',
+        lbl(a.r[0]), lbl(a.r[1]), lbl(a.r[2]), a.resolved?('แก้แล้ว ('+a.resolvedAt+')'):'ยังไม่แก้']);
+    });
+    const buf=await wb.xlsx.writeBuffer();
+    dl(new Blob([buf]),'DiffReport_'+(sess?sess.SessionID:'session')+'_'+today()+'.xlsx');
+    toast('ดาวน์โหลด Excel แล้ว','ok');
+  }catch(e){ toast(e.message,'err'); }
+}
 
 /* ============ BARCODE ============ */
 let bcSelected={};
