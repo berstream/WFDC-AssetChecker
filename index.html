@@ -145,6 +145,175 @@ textarea.inp{min-height:70px;resize:vertical}
 #scanPop.err .box{background:linear-gradient(135deg,#a8160f,#e2231a)}
 @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 
+
+/* ===== Count Dashboard v3: Overview (ov-) + Diff v2 (dv-) ===== */
+.ov-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:14px;transition:transform .2s,box-shadow .2s}
+.ov-lift:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(13,42,82,.1)}
+.ov-sec{display:flex;align-items:center;gap:8px;color:var(--navy);font-weight:800;font-size:15px;margin:0 0 12px;flex-wrap:wrap}
+.ov-sec .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+.ov-sec small{color:var(--muted);font-weight:600;font-size:12.5px}
+.ov-chip{font-size:11.5px;background:#eef3fb;color:var(--navy2);border-radius:8px;padding:2px 8px;font-weight:700}
+.ov-anim .ov-rv{opacity:0;transform:translateY(14px);animation:ovUp .6s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i,0)*80ms)}
+@keyframes ovUp{to{opacity:1;transform:none}}
+.ov-sh{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+.ov-sh h3{margin:0;font-size:20px;color:var(--navy);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ov-badge{font-size:12px;font-weight:800;border-radius:20px;padding:3px 10px;display:inline-flex;gap:6px;align-items:center}
+.ov-badge.done{background:#e4f6ec;color:var(--ok)}
+.ov-badge.wait{background:#e3edfb;color:#2b5fb0}
+.ov-badge.live{background:#fde4e2;color:var(--danger)}
+.ov-badge.live i{width:7px;height:7px;border-radius:50%;background:var(--danger);animation:ovBlink 1.2s infinite}
+@keyframes ovBlink{50%{opacity:.2}}
+.ov-meta{margin-top:6px;font-size:13px;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap}
+.ov-scope{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ov-scope span{background:#eef3fb;color:var(--navy2);border:1px solid #d5e1f3;border-radius:10px;padding:5px 10px;font-size:13px;font-weight:700}
+.ov-scope span small{font-weight:600;color:var(--muted);margin-right:4px}
+.ov-steps{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.ov-steps span{font-size:12px;font-weight:700;border-radius:8px;padding:4px 9px;background:#f1f4f9;color:var(--muted)}
+.ov-steps span.ok{background:#e4f6ec;color:var(--ok)}
+.ov-steps span.act{background:#fde4e2;color:var(--danger)}
+.ov-steps span.skip{text-decoration:line-through;opacity:.6}
+.ov-exp{display:grid;gap:8px;justify-items:end}
+.ov-exp .btns{display:flex;gap:8px;flex-wrap:wrap}
+.ov-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;font-size:14px;font-weight:700;color:var(--navy);cursor:pointer;display:inline-flex;gap:7px;align-items:center;transition:.15s}
+.ov-btn:hover{background:#eef3fb;border-color:#c9d8ef}
+.ov-btn.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ov-btn.pri:hover{background:var(--navy2)}
+.ov-hint{font-size:12px;color:var(--ok);font-weight:700;background:#f0faf4;border:1px solid #bfe6cf;border-radius:8px;padding:4px 9px}
+.ov-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.ov-kpi{position:relative;overflow:hidden;margin:0;padding:16px 18px}
+.ov-kpi .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;margin-bottom:10px}
+.ov-kpi .n{font-size:32px;font-weight:800;line-height:1}
+.ov-kpi .n small{font-size:14px;color:var(--muted);font-weight:700;margin-left:4px}
+.ov-kpi .l{font-size:13px;color:var(--muted);margin-top:4px;font-weight:600}
+.ov-kpi .bar{height:5px;border-radius:4px;background:#eef1f6;margin-top:12px;overflow:hidden}
+.ov-kpi .bar i{display:block;height:100%;width:0;border-radius:4px;transition:width 1.1s cubic-bezier(.2,.8,.2,1) .2s}
+.ov-kpi::after{content:"";position:absolute;right:-26px;top:-26px;width:90px;height:90px;border-radius:50%;background:var(--tint);opacity:.5}
+.ov-grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+.ov-grid2>.ov-card{margin-bottom:14px}
+.ov-prog{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center}
+.xr{position:relative;width:148px;height:148px;flex:none}
+.xr svg{width:100%;height:100%;transform:rotate(-90deg)}
+.xr .trk{fill:none;stroke:#eef1f6;stroke-width:13}
+.xr .seg,.xr .bar{fill:none;stroke-width:13;transition:stroke-dasharray 1s cubic-bezier(.2,.8,.2,1),stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)}
+.xr .bar{stroke-linecap:round}
+.xr .mid{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.xr .mid b{font-size:29px;font-weight:800;color:var(--ink,#1c2b3f);line-height:1}
+.xr .mid span{font-size:12px;color:var(--muted);display:block;margin-top:3px}
+.ov-lg{display:grid;gap:10px}
+.ov-lgi{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;font-size:13.5px}
+.ov-lgi em{width:12px;height:12px;border-radius:4px}
+.ov-lgi b{font-size:15px}
+.ov-lgi .sm{color:var(--muted);font-size:12px;font-weight:600;margin-left:6px}
+.ov-live{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.ov-live i{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:ovPulse 1.6s infinite}
+@keyframes ovPulse{0%{box-shadow:0 0 0 0 rgba(26,157,90,.5)}70%{box-shadow:0 0 0 8px rgba(26,157,90,0)}100%{box-shadow:0 0 0 0 rgba(26,157,90,0)}}
+.ov-cmp{display:grid;gap:14px}
+.ov-cmpr .t2{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px;gap:8px}
+.ov-d{font-size:12px;border-radius:12px;padding:1px 8px;white-space:nowrap}
+.ov-d.up{background:#e4f6ec;color:var(--ok)} .ov-d.down{background:#fde4e2;color:var(--danger)} .ov-d.eq{background:#f1f4f9;color:var(--muted)}
+.ov-pb{display:grid;grid-template-columns:62px 1fr 52px;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:4px}
+.ov-pb .t{height:9px;border-radius:6px;background:#eef1f6;overflow:hidden}
+.ov-pb .t i{display:block;height:100%;width:0;border-radius:6px;transition:width 1s cubic-bezier(.2,.8,.2,1) .2s}
+.ov-pb b{color:#1c2b3f;text-align:right}
+.ov-empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:13.5px}
+.ov-empty .e{font-size:30px;margin-bottom:6px}
+.ov-hist{height:240px;position:relative}
+.ov-legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.ov-legend b{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:4px;border-radius:2px}
+.ov-exhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.ov-opts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ov-seg{display:flex;background:#eef1f6;border-radius:10px;padding:3px}
+.ov-seg button{border:0;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer}
+.ov-seg button.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.ov-chk{display:inline-flex;gap:6px;align-items:center;font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;cursor:pointer}
+.ov-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.ov-sum span{font-size:12.5px;border-radius:8px;padding:4px 10px;font-weight:700}
+.ov-tbl{max-height:360px;overflow:auto;border-radius:10px}
+.ov-tbl table{width:100%;border-collapse:collapse;font-size:13px}
+.ov-tbl th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;padding:8px 10px;font-weight:700;font-size:12.5px}
+.ov-tbl td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.ov-res{font-weight:800;font-size:12px;border-radius:8px;padding:2px 8px}
+.ov-res.ok{background:#e4f6ec;color:var(--ok)} .ov-res.miss{background:#fde4e2;color:var(--danger)} .ov-res.ext{background:#fef3d6;color:#a67c00}
+.ov-rd{font-size:11.5px;font-weight:700;border-radius:8px;padding:2px 8px;color:#fff;white-space:nowrap}
+@media(max-width:980px){.ov-kpis{grid-template-columns:repeat(2,1fr)}.ov-grid2{grid-template-columns:1fr}.ov-sh{grid-template-columns:1fr}.ov-exp{justify-items:start}}
+@media(max-width:600px){.ov-prog{grid-template-columns:1fr;justify-items:center}.ov-lg{width:100%}.ov-tbl table{min-width:560px}}
+
+/* Diff v2 */
+.dv-hero{position:relative;overflow:hidden;border-radius:20px;padding:24px 26px;color:#fff;margin-bottom:6px;
+  background:radial-gradient(1200px 300px at 90% -40%,rgba(255,255,255,.12),transparent 60%),linear-gradient(125deg,#0b2447 0%,#123a6e 55%,#0f6b4a 130%);
+  box-shadow:0 14px 40px rgba(13,42,82,.22);display:grid;grid-template-columns:auto 1fr auto;gap:26px;align-items:center}
+.dv-hero.open{background:radial-gradient(1200px 300px at 90% -40%,rgba(255,255,255,.12),transparent 60%),linear-gradient(125deg,#0b2447 0%,#123a6e 60%,#8a4b00 135%)}
+.dv-hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%);transform:translateX(-100%)}
+.ov-anim .dv-hero::after{animation:dvShine 2.4s 1s ease-in-out}
+@keyframes dvShine{to{transform:translateX(100%)}}
+.dv-hero .xr .trk{stroke:rgba(255,255,255,.14);stroke-width:12}
+.dv-hero .xr .bar{stroke-width:12}
+.dv-hero .xr .mid b{color:#fff}
+.dv-hero .xr .mid span{color:rgba(255,255,255,.8)}
+.dv-kick{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;opacity:.75;font-weight:700}
+.dv-hero h3{margin:4px 0 12px;font-size:21px;color:#fff}
+.dv-acc{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dv-acc .box{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 16px;min-width:130px}
+.dv-acc .box small{display:block;font-size:12px;opacity:.75}
+.dv-acc .box b{font-size:26px;font-weight:800}
+.dv-acc .box.after{background:rgba(52,194,122,.2);border-color:rgba(52,194,122,.45)}
+.dv-acc .arrow{font-size:22px;opacity:.7}
+.ov-anim .dv-acc .arrow{animation:dvNudge 1.6s 1.2s ease-in-out 2}
+@keyframes dvNudge{50%{transform:translateX(6px)}}
+.dv-delta{background:#34c27a;color:#06311d;font-weight:800;border-radius:20px;padding:4px 10px;font-size:13px}
+.dv-delta.neg{background:#ff8a84;color:#4a0906}
+.dv-side{display:grid;gap:8px;min-width:170px}
+.dv-pill{display:flex;justify-content:space-between;gap:14px;align-items:center;background:rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;font-size:13.5px}
+.dv-pill b{font-size:18px}
+.dv-status{justify-self:end;font-weight:800;border-radius:20px;padding:5px 12px;font-size:12.5px;display:inline-flex;gap:6px;align-items:center;background:#34c27a;color:#06311d}
+.dv-status.warn{background:#ffc94d;color:#4a3300}
+.dv-status.live{background:#ff8a84;color:#4a0906}
+.dv-status i{width:7px;height:7px;border-radius:50%;background:currentColor;animation:ovBlink 1.4s infinite}
+.dv-journey{grid-column:1/-1;margin-top:4px}
+.dv-journey .lbl{display:flex;justify-content:space-between;font-size:12.5px;opacity:.85;margin-bottom:6px}
+.dv-jbar{display:flex;height:14px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.12)}
+.dv-jbar i{display:block;height:100%;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.dv-jlg{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;opacity:.9}
+.dv-jlg span{display:inline-flex;align-items:center;gap:6px}
+.dv-jlg em{width:10px;height:10px;border-radius:3px;display:inline-block}
+.dv-sec{margin:22px 0 10px}
+.dv-tl{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:6px}
+.dv-rail{position:absolute;left:12%;right:12%;top:37px;height:4px;background:#e3e8f0;border-radius:4px;z-index:0}
+.dv-rail i{display:block;height:100%;width:0;border-radius:4px;background:linear-gradient(90deg,var(--navy),#2b5fb0,#7a4fc0,var(--red));transition:width 1.6s cubic-bezier(.2,.8,.2,1) .3s}
+.dv-rc{position:relative;z-index:1;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 14px 13px;text-align:center;transition:transform .2s,box-shadow .2s}
+.dv-rc:hover{transform:translateY(-4px);box-shadow:0 12px 26px rgba(13,42,82,.12)}
+.dv-rc .node{width:46px;height:46px;border-radius:50%;margin:-2px auto 8px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;box-shadow:0 0 0 5px #fff,0 4px 14px rgba(0,0,0,.15)}
+.dv-rc .nm{font-weight:800;color:var(--navy);font-size:15px}
+.dv-rc .sub{font-size:12px;color:var(--muted);margin-top:1px}
+.dv-rc .big{font-size:28px;font-weight:800;margin-top:8px;line-height:1}
+.dv-rc .big small{font-size:13px;color:var(--muted);font-weight:700}
+.dv-rc .mini{display:flex;justify-content:center;gap:10px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.dv-rc .mini b{color:#1c2b3f}
+.dv-rc.lock{opacity:.5;filter:grayscale(1)}
+.dv-rc.lock .node{background:#b7c1cf!important}
+.dv-rc.cur{border-color:#e2231a;box-shadow:0 0 0 3px rgba(226,35,26,.1)}
+.dv-dr{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.dv-dc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.dv-dc:hover{transform:translateY(-4px);box-shadow:0 12px 26px rgba(13,42,82,.12)}
+.dv-dc::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c)}
+.dv-dc h4{margin:0 0 10px;font-size:13px;color:var(--navy);display:flex;align-items:center;gap:7px}
+.dv-dc h4 .d{width:7px;height:7px;border-radius:50%;background:var(--c);flex:none}
+.dv-dc .body{display:flex;align-items:center;gap:14px}
+.dv-dc .xr{width:92px;height:92px}
+.dv-dc .xr .trk{stroke-width:10}
+.dv-dc .xr .bar{stroke-width:10;stroke:var(--c)}
+.dv-dc .xr .mid b{font-size:16px}
+.dv-dc .xr .mid span{font-size:10.5px;margin-top:2px}
+.dv-lg{flex:1;display:grid;gap:7px;font-size:12.8px}
+.dv-lg div{display:flex;align-items:center;gap:7px}
+.dv-lg em{width:9px;height:9px;border-radius:3px;display:inline-block}
+.dv-lg b{margin-left:auto}
+.dv-dc .foot{margin-top:11px;padding-top:9px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.dv-dc .foot b{color:#1c2b3f;white-space:nowrap}
+.dv-dc.lock{opacity:.55}
+@media(max-width:980px){.dv-hero{grid-template-columns:auto 1fr}.dv-side{grid-column:1/-1;grid-template-columns:repeat(3,1fr)}.dv-dr,.dv-tl{grid-template-columns:repeat(2,1fr)}.dv-rail{display:none}}
+@media(max-width:600px){.dv-hero{grid-template-columns:1fr;justify-items:center;text-align:center}.dv-acc{justify-content:center}.dv-side{grid-template-columns:1fr;width:100%}.dv-status{justify-self:center}.dv-dr,.dv-tl{grid-template-columns:1fr}}
+
 /* Lightbox พรีวิวรูป */
 #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;
   align-items:center;justify-content:center}
@@ -451,58 +620,84 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
 
           <div class="cd-tabs">
             <button id="cdTabBtnOverview" class="on" onclick="cdSwitchTab('overview')">ภาพรวม</button>
-            <button id="cdTabBtnDiff" onclick="cdSwitchTab('diff')">รายงาน Diff (3 รอบ)</button>
+            <button id="cdTabBtnDiff" onclick="cdSwitchTab('diff')">รายงาน Diff (Count 1–3)</button>
           </div>
 
-          <!-- ===== TAB: ภาพรวม (ของเดิม) ===== -->
+          <!-- ===== TAB: ภาพรวม ===== -->
           <div id="cdTabOverview">
-            <div class="card">
-              <div class="row" style="justify-content:space-between;flex-wrap:wrap">
-                <div><b id="cdTitle" style="font-size:16px"></b><div class="muted" id="cdSub"></div></div>
-                <div class="row" style="gap:8px">
-                  <button class="btn ghost sm" onclick="exportCountPDF()">📄 Export PDF</button>
-                  <button class="btn ghost sm" onclick="exportCountExcel()">📊 Export Excel</button>
+            <div class="ov-card ov-rv" style="--i:0">
+              <div class="ov-sh">
+                <div>
+                  <h3><span id="cdTitle"></span> <span id="ovBadge" class="ov-badge"></span></h3>
+                  <div class="ov-meta" id="ovMeta"></div>
+                  <div class="ov-scope" id="ovScope"></div>
+                  <div class="ov-steps" id="ovSteps"></div>
+                </div>
+                <div class="ov-exp">
+                  <div class="btns">
+                    <button class="ov-btn" onclick="exportCountPDF()">📄 Export PDF</button>
+                    <button class="ov-btn pri" onclick="exportCountExcel()">📊 Export Excel</button>
+                  </div>
+                  <div class="ov-hint" id="ovHint"></div>
+                  <div id="cdExMsg" class="muted"></div>
                 </div>
               </div>
-              <div id="cdExMsg" class="muted" style="margin-top:8px"></div>
             </div>
 
-            <!-- progress -->
-            <div class="card">
-              <div class="row" style="justify-content:space-between"><b>ความคืบหน้า (real-time)</b>
-                <span id="cdProgTxt" class="muted"></span></div>
-              <div style="background:#e8edf5;border-radius:99px;height:16px;overflow:hidden;margin:10px 0">
-                <div id="cdProgBar" style="height:100%;width:0;background:var(--ok);transition:width .3s;border-radius:99px"></div>
+            <div class="ov-kpis">
+              <div class="ov-card ov-kpi ov-lift ov-rv" style="--i:1;--tint:#dfe8f6"><div class="ic" style="background:#eef3fb">📦</div><div class="n" id="ovTotal">0</div><div class="l">ในขอบเขตรอบนี้</div><div class="bar"><i id="ovBarTotal" style="background:var(--navy)"></i></div></div>
+              <div class="ov-card ov-kpi ov-lift ov-rv" style="--i:2;--tint:#d6f1e2"><div class="ic" style="background:#e4f6ec">✅</div><div class="n" style="color:var(--ok)"><span id="ovFound">0</span><small id="ovFoundPct">0%</small></div><div class="l">พบ</div><div class="bar"><i id="ovBarFound" style="background:var(--ok)"></i></div></div>
+              <div class="ov-card ov-kpi ov-lift ov-rv" style="--i:3;--tint:#fbdcd9"><div class="ic" style="background:#fde4e2">❌</div><div class="n" style="color:var(--danger)"><span id="ovMissing">0</span><small id="ovMissingPct">0%</small></div><div class="l">ขาด</div><div class="bar"><i id="ovBarMissing" style="background:var(--danger)"></i></div></div>
+              <div class="ov-card ov-kpi ov-lift ov-rv" style="--i:4;--tint:#fcefc7"><div class="ic" style="background:#fef3d6">➕</div><div class="n" style="color:#a67c00"><span id="ovExtra">0</span><small id="ovExtraPct">0%</small></div><div class="l">เกิน (นอกระบบ/นอกขอบเขต)</div><div class="bar"><i id="ovBarExtra" style="background:var(--warn)"></i></div></div>
+            </div>
+
+            <div class="ov-grid2">
+              <div class="ov-card ov-rv" style="--i:5">
+                <div class="ov-sec"><span class="dot"></span>ความคืบหน้า <small>· พบของในรอบไหน</small></div>
+                <div class="ov-prog">
+                  <div class="xr"><svg viewBox="0 0 148 148"><circle class="trk" cx="74" cy="74" r="60"/>
+                    <circle class="seg" id="ovSeg1" cx="74" cy="74" r="60" stroke="#0d2a52"/>
+                    <circle class="seg" id="ovSeg2" cx="74" cy="74" r="60" stroke="#2b5fb0"/>
+                    <circle class="seg" id="ovSeg3" cx="74" cy="74" r="60" stroke="#7a4fc0"/>
+                    <circle class="seg" id="ovSeg4" cx="74" cy="74" r="60" stroke="#e2231a"/></svg>
+                    <div class="mid"><div><b id="ovRingPct">0%</b><span id="ovRingSub"></span></div></div></div>
+                  <div class="ov-lg" id="ovLg"></div>
+                </div>
+                <div class="ov-live" id="ovLive"><i></i> อัปเดตอัตโนมัติ (real-time) ทุกครั้งที่มีการสแกน</div>
               </div>
-              <div class="row" style="gap:20px;flex-wrap:wrap;margin-top:6px">
-                <div><b id="cdFound" style="color:var(--ok)">0</b> <span class="muted">พบ</span> <span id="cdFoundPct" class="muted"></span></div>
-                <div><b id="cdMissing" style="color:var(--danger)">0</b> <span class="muted">ขาด</span> <span id="cdMissingPct" class="muted"></span></div>
-                <div><b id="cdExtra" style="color:var(--warn)">0</b> <span class="muted">เกิน</span> <span id="cdExtraPct" class="muted"></span></div>
-                <div><b id="cdTotal">0</b> <span class="muted">ทั้งหมด</span></div>
+              <div class="ov-card ov-rv" style="--i:6">
+                <div class="ov-sec"><span class="dot"></span>เทียบรอบก่อน <span class="ov-chip">ขอบเขตเดียวกัน</span></div>
+                <div id="cdCompare"></div>
               </div>
             </div>
 
-            <!-- compare + chart -->
-            <div class="charts">
-              <div class="chart-card"><h3>เทียบรอบก่อน</h3><div id="cdCompare"></div></div>
-              <div class="chart-card"><h3>%ความแม่นยำ ย้อนหลัง</h3><div class="chart-box"><canvas id="cdChart"></canvas></div></div>
+            <div class="ov-card ov-rv" style="--i:7">
+              <div class="ov-sec"><span class="dot"></span>อัตราพบย้อนหลัง <span class="ov-chip" id="ovHistScope"></span> <small>· 5 รอบล่าสุด</small></div>
+              <div class="ov-hist"><canvas id="cdChart"></canvas></div>
+              <div class="ov-legend"><span><b style="background:#b7c3d6"></b>อัตราพบตอน Regular</span><span><b style="background:#2b5fb0"></b>อัตราพบสุดท้าย (หลัง Count 1–3)</span></div>
+            </div>
+
+            <div class="ov-card ov-rv" style="--i:8">
+              <div class="ov-exhead">
+                <div class="ov-sec" style="margin:0"><span class="dot"></span>ตัวอย่างสิ่งที่จะ Export <small>· ตารางในไฟล์ PDF / Excel</small></div>
+                <div class="ov-opts">
+                  <div class="ov-seg" id="ovExSeg"><button class="on" data-f="all" onclick="ovSetExFilter('all')">ทุกรายการในขอบเขต</button><button data-f="diff" onclick="ovSetExFilter('diff')">เฉพาะที่เคยเป็น Diff</button></div>
+                  <label class="ov-chk"><input type="checkbox" id="ovExPhoto" checked> แนบรูป</label>
+                </div>
+              </div>
+              <div class="ov-sum" id="ovExSum"></div>
+              <div class="ov-tbl"><table><thead><tr><th>WFDC</th><th>Makro</th><th>ชื่อ</th><th>ประเภท</th><th>โซน</th><th>เจอในรอบ</th><th>ผล</th></tr></thead><tbody id="ovExBody"></tbody></table></div>
+              <div class="muted" id="ovExNote" style="margin-top:8px"></div>
             </div>
           </div>
 
           <!-- ===== TAB: รายงาน Diff (ใหม่) ===== -->
           <div id="cdTabDiff" style="display:none">
 
-            <div id="diffNoRounds" class="empty" style="display:none">รอบนี้ยังไม่มี Diff และยังไม่ได้เริ่ม Count 1 — เมื่อปิด Regular Count แล้วมี Diff รายงานจะแสดงที่นี่</div>
+            <div id="diffNoRounds" class="empty" style="display:none">ขอบเขตของรอบนับนี้ยังไม่มีรายการทรัพย์สิน</div>
 
             <div id="diffContent" style="display:none">
-              <div class="diff-round-picker" id="diffRoundPicker"></div>
-
-              <div class="diff-funnel-wrap">
-                <h3><span class="dot"></span> สรุปเส้นทางการแก้ปัญหา (Resolution Funnel)</h3>
-                <div class="diff-funnel-row" id="diffFunnelRow"></div>
-              </div>
-
-              <div class="diff-donut-row" id="diffDonutRow"></div>
+              <div id="diffV2"></div>
 
               <div class="diff-filter-bar">
                 <div class="seg">
@@ -1872,23 +2067,47 @@ async function forceCloseSession(){
 }
 
 /* ============ COUNT DASHBOARD ============ */
-let cdSessions=[], cdCurrent=null, cdUnsub=null, cdChartObj=null, cdLastResult=null;
-let cdActiveTab='overview';
+let cdSessions=[], cdCurrent=null, cdUnsub=null, cdChartObj=null, cdScopeData=null;
+let cdActiveTab='overview', cdAnimTimer=null, diffAnimKey=null, ovExFilter='all';
+let cdAssetsCache=null, cdAssetsAt=0, cdScopeCache={};
+const RD_COLORS={1:'#0d2a52',2:'#2b5fb0',3:'#7a4fc0',4:'#e2231a'};
+function pc_(n,t){ return t ? +((n/t*100).toFixed(1)) : 0; }
+function scopeText_(s){ return (s.Zone||'ทั้งคลัง')+' · '+(s.Category||'ทุกประเภท'); }
+function cdPlayAnim_(){
+  const b=document.getElementById('cdBody'); if(!b) return;
+  b.classList.remove('ov-anim'); void b.offsetWidth; b.classList.add('ov-anim');
+  clearTimeout(cdAnimTimer); cdAnimTimer=setTimeout(()=>b.classList.remove('ov-anim'),2200);
+}
+// นับเลขขึ้นแบบนุ่ม ๆ จากค่าที่แสดงอยู่ → ค่าใหม่
+function ovCount_(el,to,dec,suf){
+  if(!el) return; dec=dec||0; suf=suf||'';
+  const from=+(el.dataset.v||0); el.dataset.v=to;
+  if(from===to){ el.textContent=(+to).toFixed(dec)+suf; return; }
+  const t0=performance.now(), dur=900;
+  const st=t=>{ const k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3); el.textContent=(from+(to-from)*e).toFixed(dec)+suf; if(k<1) requestAnimationFrame(st); };
+  requestAnimationFrame(st);
+}
 function cdSwitchTab(tab){
   cdActiveTab=tab;
   document.getElementById('cdTabBtnOverview').classList.toggle('on', tab==='overview');
   document.getElementById('cdTabBtnDiff').classList.toggle('on', tab==='diff');
   document.getElementById('cdTabOverview').style.display = tab==='overview' ? 'block':'none';
   document.getElementById('cdTabDiff').style.display = tab==='diff' ? 'block':'none';
-  if(tab==='diff' && cdCurrent) cdLoadDiff(cdCurrent.SessionID);
+  cdPlayAnim_();
+  if(tab==='diff' && cdCurrent){ diffAnimKey=null; cdLoadDiff(cdCurrent.SessionID); }
+  if(tab==='overview' && cdChartObj) setTimeout(()=>cdChartObj.resize(),0);
+}
+function cdSessOption_(s){
+  return `${s.SessionID} · ${roundName_(s.Round)} · ${scopeText_(s)} · ${statusLabel_(s.Status,s.Round)}`;
 }
 async function loadCountDash(){
   try{
+    cdScopeCache={}; cdAssetsCache=null;
     cdSessions=(await api('listSessions')).sessions;
     const sel=document.getElementById('cdSession');
     if(!cdSessions.length){ document.getElementById('cdEmpty').style.display='block'; document.getElementById('cdBody').style.display='none'; sel.innerHTML=''; return; }
     document.getElementById('cdEmpty').style.display='none';
-    sel.innerHTML=cdSessions.map((s,i)=>`<option value="${esc(s.SessionID)}">${esc(s.SessionID)} · รอบ ${esc(s.Round)}${s.Zone?(' · '+esc(s.Zone)):''}${s.Category?(' · '+esc(s.Category)):''} · ${esc(s.Status)}</option>`).join('');
+    sel.innerHTML=cdSessions.map(s=>`<option value="${esc(s.SessionID)}">${esc(cdSessOption_(s))}</option>`).join('');
     cdSelectSession(); // เลือกรอบล่าสุด (index 0 เพราะ listSessions เรียงใหม่->เก่า)
   }catch(e){toast(e.message,'err');}
 }
@@ -1896,72 +2115,213 @@ function cdSelectSession(){
   const sid=document.getElementById('cdSession').value;
   cdCurrent=cdSessions.find(s=>s.SessionID===sid);
   if(!cdCurrent)return;
+  cdScopeData=null; diffAnimKey=null;
   document.getElementById('cdBody').style.display='block';
-  document.getElementById('cdTitle').textContent=cdCurrent.SessionID;
-  document.getElementById('cdSub').textContent='รอบที่ '+cdCurrent.Round+' · โซน '+(cdCurrent.Zone||'ทั้งคลัง')+' · ประเภท '+(cdCurrent.Category||'ทุกประเภท')+' · '+cdCurrent.CreatedBy+' · '+fmtDate(cdCurrent.CreatedDate)+' · '+cdCurrent.Status;
-  // ยกเลิก listener เก่า แล้วผูกใหม่กับ items ของรอบนี้ (real-time)
+  // รีเซ็ตตัวเลข/วงแหวน ให้เล่นแอนิเมชันใหม่ตอนเปลี่ยนรอบ
+  document.querySelectorAll('#cdTabOverview [data-v]').forEach(el=>{ el.dataset.v=0; });
+  ovRingSet_([0,0,0,0,0],0,true);
+  ['ovBarTotal','ovBarFound','ovBarMissing','ovBarExtra'].forEach(id=>{ const b=document.getElementById(id); b.style.transition='none'; b.style.width='0'; void b.offsetWidth; b.style.transition=''; });
+  document.getElementById('ovExBody').innerHTML='<tr><td colspan="7" class="muted">กำลังโหลด...</td></tr>';
+  cdPlayAnim_();
+  ovRenderHeader_(cdCurrent, null);
   if(cdUnsub){ cdUnsub(); cdUnsub=null; }
   cdUnsub = db.collection('sessions').doc(sid).collection('items').onSnapshot(()=>{ cdRefresh(sid); });
-  cdRefresh(sid);
 }
+
+/* ---- ข้อมูลตามขอบเขตของรอบนับ (โซน/ประเภท) ---- */
+async function cdAssets_(){
+  if(cdAssetsCache && Date.now()-cdAssetsAt<60000) return cdAssetsCache;
+  const snap=await db.collection('assets').get();
+  cdAssetsCache=snap.docs.map(d=>({wfdcId:d.id, ...d.data()})); cdAssetsAt=Date.now();
+  return cdAssetsCache;
+}
+async function cdScope_(sess){
+  const assets=await cdAssets_();
+  const itemsSnap=await db.collection('sessions').doc(sess.SessionID).collection('items').get();
+  const amap={}; assets.forEach(a=>amap[a.wfdcId]=a);
+  const expected=assets.filter(a=>a.status!=='จำหน่ายแล้ว')
+    .filter(a=>!sess.Zone || a.zone===sess.Zone)
+    .filter(a=>!sess.Category || a.category===sess.Category);
+  const exp={}; expected.forEach(a=>exp[a.wfdcId]=true);
+  const first={}; // รอบแรกที่สแกนเจอ
+  itemsSnap.docs.forEach(d=>{ const it=d.data(); if(it.found!==true||!it.wfdcId) return; const r=parseInt(it.round,10)||1;
+    if(!(it.wfdcId in first) || r<first[it.wfdcId]) first[it.wfdcId]=r; });
+  const byRound=[0,0,0,0,0]; let found=0;
+  const rows=expected.map(a=>{ const r=first[a.wfdcId]||0; if(r){ found++; byRound[Math.min(r,4)]++; } return {...a, _round:r, _state:r?'พบ':'ขาด'}; })
+    .sort((a,b)=>a.wfdcId<b.wfdcId?-1:1);
+  const extras=Object.keys(first).filter(w=>!exp[w]).sort().map(w=>{ const a=amap[w];
+    return { wfdcId:w, assetId:a?a.assetId:'', makroTag:a?(a.makroTag||'-'):'-', name:a?(a.name+' (นอกขอบเขต)'):'(ไม่มีในระบบ)',
+      category:a?(a.category||'-'):'-', zone:a?(a.zone||'-'):'-', _round:first[w], _state:'เกิน', photoSlots:a?a.photoSlots:null, photos:a?a.photos:null }; });
+  const total=expected.length;
+  return { sess, rows, extras, total, found, missing:total-found, extra:extras.length, byRound,
+    regFound:byRound[1], regPct:pc_(byRound[1],total), finalPct:pc_(found,total) };
+}
+async function cdScopeCached_(sess){
+  if(!cdScopeCache[sess.SessionID]) cdScopeCache[sess.SessionID]=await cdScope_(sess);
+  return cdScopeCache[sess.SessionID];
+}
+
 async function cdRefresh(sid){
   try{
-    const r=(await api('countResult',{sessionId:sid})).result;
-    cdLastResult=r;
-    const pct=n=> r.total? (n/r.total*100).toFixed(1) : '0.0';
-    document.getElementById('cdTotal').textContent=r.total;
-    document.getElementById('cdFound').textContent=r.found;
-    document.getElementById('cdMissing').textContent=r.missing;
-    document.getElementById('cdExtra').textContent=r.extra;
-    document.getElementById('cdFoundPct').textContent='('+pct(r.found)+'%)';
-    document.getElementById('cdMissingPct').textContent='('+pct(r.missing)+'%)';
-    document.getElementById('cdExtraPct').textContent='('+pct(r.extra)+'%)';
-    const prog=r.total? (r.found/r.total*100):0;
-    document.getElementById('cdProgBar').style.width=prog.toFixed(1)+'%';
-    document.getElementById('cdProgTxt').textContent='นับไปแล้ว '+r.found+' / '+r.total+' ชิ้น ('+prog.toFixed(1)+'%)';
-    cdRenderCompare(sid, r);
-    cdRenderChart(sid);
+    const sess=cdSessions.find(s=>s.SessionID===sid); if(!sess) return;
+    try{ const g=(await api('getSession',{sessionId:sid})).session; Object.assign(sess,g); }catch(e){}
+    const d=await cdScope_(sess);
+    if(!cdCurrent || cdCurrent.SessionID!==sid) return;
+    cdScopeData=d;
+    const opt=[...document.getElementById('cdSession').options].find(o=>o.value===sid); if(opt) opt.textContent=cdSessOption_(sess);
+    ovRenderHeader_(sess, d);
+    ovRenderKpi_(d);
+    ovRenderExport_();
+    cdRenderCompare(sess, d);
+    cdRenderChart(sess, d);
     if(cdActiveTab==='diff') cdLoadDiff(sid);
-  }catch(e){}
+  }catch(e){ console.warn(e); }
 }
-function cdFindPrev_(sid){
-  // รอบก่อนหน้า = session ที่เก่ากว่า sid ถัดไปในลิสต์ (cdSessions เรียงใหม่->เก่า)
-  const idx=cdSessions.findIndex(s=>s.SessionID===sid);
-  return (idx>=0 && idx+1<cdSessions.length) ? cdSessions[idx+1] : null;
+
+function ovRenderHeader_(s, d){
+  document.getElementById('cdTitle').textContent=s.SessionID;
+  const st=s.Status, b=document.getElementById('ovBadge');
+  if(st==='done'){ b.className='ov-badge done'; b.textContent='✓ ปิดจบแล้ว'; }
+  else if(st==='round_closed'){ b.className='ov-badge wait'; b.textContent='⏸ ปิด '+roundName_(s.Round)+' · รอเริ่มรอบถัดไป'; }
+  else { b.className='ov-badge live'; b.innerHTML='<i></i> กำลังนับ '+esc(roundName_(s.Round)); }
+  document.getElementById('ovMeta').innerHTML=`<span>👤 ${esc(s.CreatedBy||'-')}</span><span>🗓 ${esc(fmtDate(s.CreatedDate))}</span><span>${st==='done'?'สิ้นสุดที่ ':'อยู่ที่ '}${esc(roundName_(s.Round))}</span>`;
+  document.getElementById('ovScope').innerHTML=`<span><small>โซน</small>${esc(s.Zone||'ทั้งคลัง')}</span><span><small>ประเภท</small>${esc(s.Category||'ทุกประเภท')}</span><span><small>ในขอบเขต</small>${d?d.total:'…'} รายการ</span>`;
+  const cur=parseInt(s.Round,10)||1;
+  document.getElementById('ovSteps').innerHTML=ROUND_NAMES.map((nm,i)=>{ const n=i+1; let c='';
+    if(n<cur || (n===cur && st!=='counting' && st!=='recheck')) c='ok'; else if(n===cur) c='act'; else if(st==='done') c='skip';
+    return `<span class="${c}">${c==='ok'?'✓ ':(c==='act'?'● ':'')}${nm}</span>`; }).join('');
+  document.getElementById('ovHint').textContent = d ? ('✓ Export เฉพาะ '+d.total+' รายการในขอบเขต'+(d.extra?(' + เกิน '+d.extra):'')) : 'กำลังคำนวณขอบเขต...';
+  document.getElementById('ovHistScope').textContent='เฉพาะ '+scopeText_(s);
+  document.getElementById('ovLive').style.display = st==='done' ? 'none':'flex';
 }
-async function cdRenderCompare(sid, cur){
-  const prev=cdFindPrev_(sid);
+const OV_C=2*Math.PI*60;
+function ovRingSet_(byRound,total,instant){
+  let acc=0;
+  for(let r=1;r<=4;r++){
+    const el=document.getElementById('ovSeg'+r); const frac=total?byRound[r]/total:0;
+    if(instant) el.style.transition='none';
+    el.style.strokeDashoffset = -(OV_C*acc);
+    el.style.strokeDasharray = `${frac>0?Math.max(0,OV_C*frac-2):0} ${OV_C}`;
+    if(instant){ void el.getBoundingClientRect(); el.style.transition=''; }
+    acc+=frac;
+  }
+}
+function ovRenderKpi_(d){
+  const t=d.total;
+  ovCount_(document.getElementById('ovTotal'),t);
+  ovCount_(document.getElementById('ovFound'),d.found);
+  ovCount_(document.getElementById('ovMissing'),d.missing);
+  ovCount_(document.getElementById('ovExtra'),d.extra);
+  ovCount_(document.getElementById('ovFoundPct'),pc_(d.found,t),1,'%');
+  ovCount_(document.getElementById('ovMissingPct'),pc_(d.missing,t),1,'%');
+  ovCount_(document.getElementById('ovExtraPct'),pc_(d.extra,t),1,'%');
+  requestAnimationFrame(()=>{
+    document.getElementById('ovBarTotal').style.width=(t?100:0)+'%';
+    document.getElementById('ovBarFound').style.width=pc_(d.found,t)+'%';
+    document.getElementById('ovBarMissing').style.width=pc_(d.missing,t)+'%';
+    document.getElementById('ovBarExtra').style.width=Math.min(100,pc_(d.extra,t))+'%';
+    ovRingSet_(d.byRound,t,false);
+  });
+  ovCount_(document.getElementById('ovRingPct'),d.finalPct,d.finalPct%1?1:0,'%');
+  document.getElementById('ovRingSub').textContent='พบ '+d.found+' / '+t;
+  const cur=parseInt(d.sess.Round,10)||1;
+  let lg=`<div class="ov-lgi"><em style="background:${RD_COLORS[1]}"></em><span>Regular Count</span><b>${d.byRound[1]}<span class="sm">${pc_(d.byRound[1],t)}%</span></b></div>`;
+  for(let r=2;r<=4;r++){
+    const reached=cur>=r;
+    lg+=`<div class="ov-lgi" style="${reached?'':'opacity:.5'}"><em style="background:${RD_COLORS[r]}"></em><span>ตามเจอใน ${roundName_(r)}</span><b>${reached?('+'+d.byRound[r]+'<span class="sm">'+pc_(d.byRound[r],t)+'%</span>'):('<span class="sm">'+(d.sess.Status==='done'?'ข้าม':'ยังไม่ถึง')+'</span>')}</b></div>`;
+  }
+  lg+=`<div class="ov-lgi"><em style="background:#eef1f6"></em><span>ยังไม่เจอ (ขาด)</span><b style="color:${d.missing?'var(--danger)':'inherit'}">${d.missing}</b></div>`;
+  document.getElementById('ovLg').innerHTML=lg;
+}
+
+/* ---- เทียบรอบก่อน (ขอบเขตเดียวกัน) ---- */
+function cdSameScope_(a,b){ return (a.Zone||'')===(b.Zone||'') && (a.Category||'')===(b.Category||''); }
+function cdFindPrev_(sess){
+  const idx=cdSessions.findIndex(s=>s.SessionID===sess.SessionID);
+  for(let i=idx+1;i<cdSessions.length;i++) if(cdSameScope_(cdSessions[i],sess)) return cdSessions[i];
+  return null;
+}
+async function cdRenderCompare(sess, cur){
   const box=document.getElementById('cdCompare');
-  if(!prev){ box.innerHTML='<div class="muted">ไม่มีรอบก่อนหน้าให้เทียบ</div>'; return; }
-  let pr;
-  try{ pr=(await api('countResult',{sessionId:prev.SessionID})).result; }catch(e){ box.innerHTML='<div class="muted">โหลดรอบก่อนไม่ได้</div>'; return; }
-  const pct=(n,t)=> t? (n/t*100).toFixed(1) : '0.0';
-  const arrow=(now,before,goodDown)=>{ const d=now-before; if(d===0)return '<span class="muted">—</span>';
-    const good= goodDown? d<0 : d>0; const col=good?'var(--ok)':'var(--danger)';
-    return `<span style="color:${col}">${d>0?'▲ +':'▼ '}${d}</span>`; };
-  box.innerHTML=`<table style="width:100%"><thead><tr><th></th><th>รอบก่อน</th><th>รอบนี้</th><th>เปลี่ยน</th></tr></thead><tbody>
-    <tr><td>ความแม่นยำ</td><td>${pct(pr.found,pr.total)}%</td><td>${pct(cur.found,cur.total)}%</td><td>${arrow(+pct(cur.found,cur.total),+pct(pr.found,pr.total),false)}%</td></tr>
-    <tr><td>ขาด</td><td>${pr.missing} (${pct(pr.missing,pr.total)}%)</td><td>${cur.missing} (${pct(cur.missing,cur.total)}%)</td><td>${arrow(cur.missing,pr.missing,true)} ชิ้น</td></tr>
-    <tr><td>เกิน</td><td>${pr.extra} (${pct(pr.extra,pr.total)}%)</td><td>${cur.extra} (${pct(cur.extra,cur.total)}%)</td><td>${arrow(cur.extra,pr.extra,true)} ชิ้น</td></tr>
-  </tbody></table>`;
+  const prev=cdFindPrev_(sess);
+  if(!prev){ box.innerHTML=`<div class="ov-empty"><div class="e">🗂️</div>ยังไม่มีรอบก่อนของ <b>${esc(scopeText_(sess))}</b> ให้เทียบ<br><span style="font-size:12px">นับรอบถัดไปในขอบเขตเดียวกัน แล้วจะเทียบให้อัตโนมัติ</span></div>`; return; }
+  let pr; try{ pr=await cdScopeCached_(prev); }catch(e){ box.innerHTML='<div class="ov-empty">โหลดรอบก่อนไม่ได้</div>'; return; }
+  const dl_=(now,before,unit,goodDown)=>{ const d=+(now-before).toFixed(1);
+    if(d===0) return '<span class="ov-d eq">— เท่าเดิม</span>';
+    const good=goodDown? d<0 : d>0;
+    return `<span class="ov-d ${good?'up':'down'}">${d>0?'▲ +':'▼ '}${d}${unit}</span>`; };
+  const pb=(lbl,v,max,col,txt)=>`<div class="ov-pb"><span>${lbl}</span><div class="t"><i style="background:${col}" data-w="${max?Math.min(100,v/max*100):0}"></i></div><b>${txt}</b></div>`;
+  const pLeft=pr.missing+pr.extra, cLeft=cur.missing+cur.extra, mx=Math.max(pLeft,cLeft,1);
+  box.innerHTML=`<div class="muted" style="margin:-4px 0 12px">เทียบกับ <b style="color:#1c2b3f">${esc(prev.SessionID)}</b> · ${esc(fmtDate(prev.CreatedDate))}</div>
+  <div class="ov-cmp">
+    <div class="ov-cmpr"><div class="t2"><span>อัตราพบ (Regular)</span>${dl_(cur.regPct,pr.regPct,'%',false)}</div>
+      ${pb('รอบก่อน',pr.regPct,100,'#b7c3d6',pr.regPct+'%')}${pb('รอบนี้',cur.regPct,100,'var(--navy)',cur.regPct+'%')}</div>
+    <div class="ov-cmpr"><div class="t2"><span>อัตราพบ (สุดท้าย)</span>${dl_(cur.finalPct,pr.finalPct,'%',false)}</div>
+      ${pb('รอบก่อน',pr.finalPct,100,'#b7c3d6',pr.finalPct+'%')}${pb('รอบนี้',cur.finalPct,100,'var(--ok)',cur.finalPct+'%')}</div>
+    <div class="ov-cmpr"><div class="t2"><span>ขาด / เกิน ค้างท้ายรอบ</span>${dl_(cLeft,pLeft,' ชิ้น',true)}</div>
+      ${pb('รอบก่อน',pLeft,mx,'#f3b1ad',pLeft)}${pb('รอบนี้',cLeft,mx,'var(--danger)',cLeft)}</div>
+  </div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>box.querySelectorAll('[data-w]').forEach(i=>i.style.width=i.dataset.w+'%')));
 }
-async function cdRenderChart(sid){
-  // ย้อนหลังสูงสุด 5 รอบ (รวมรอบปัจจุบัน) — เรียงเก่า->ใหม่
-  const idx=cdSessions.findIndex(s=>s.SessionID===sid);
-  const slice=cdSessions.slice(idx, idx+5).reverse();
-  const labels=[], data=[];
+
+/* ---- กราฟอัตราพบย้อนหลัง (ขอบเขตเดียวกัน) ---- */
+async function cdRenderChart(sess, cur){
+  const same=cdSessions.filter(s=>cdSameScope_(s,sess));
+  const idx=same.findIndex(s=>s.SessionID===sess.SessionID);
+  const slice=same.slice(idx, idx+5).reverse();
+  const labels=[], reg=[], fin=[];
   for(const s of slice){
-    try{ const r=(await api('countResult',{sessionId:s.SessionID})).result;
-      labels.push(s.SessionID.slice(-6)); data.push(r.total? +(r.found/r.total*100).toFixed(1):0); }catch(e){}
+    try{ const r = s.SessionID===sess.SessionID ? cur : await cdScopeCached_(s);
+      labels.push(s.SessionID.replace('COUNT-','')); reg.push(r.regPct); fin.push(r.finalPct); }catch(e){}
+  }
+  if(!cdCurrent || cdCurrent.SessionID!==sess.SessionID) return;
+  if(cdChartObj && cdChartObj._sid===sess.SessionID && cdChartObj.data.labels.join()===labels.join()){
+    cdChartObj.data.datasets[0].data=reg; cdChartObj.data.datasets[1].data=fin; cdChartObj.update(); return;
   }
   const ctx=document.getElementById('cdChart');
-  if(cdChartObj)cdChartObj.destroy();
-  cdChartObj=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'%ความแม่นยำ',data,backgroundColor:'#1a4b8c',borderRadius:6,maxBarThickness:34}]},
-    options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100,ticks:{font:{size:10.5}}},x:{ticks:{font:{size:10.5}}}},
-      plugins:{legend:{display:false}},animation:{duration:650,easing:'easeOutQuart'}}});
+  if(cdChartObj) cdChartObj.destroy();
+  const g=ctx.getContext('2d').createLinearGradient(0,0,0,240); g.addColorStop(0,'rgba(43,95,176,.22)'); g.addColorStop(1,'rgba(43,95,176,0)');
+  const lastIdx=labels.length-1;
+  cdChartObj=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'อัตราพบตอน Regular',data:reg,borderColor:'#b7c3d6',borderDash:[6,6],borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#b7c3d6',tension:.35,fill:false},
+    {label:'อัตราพบสุดท้าย',data:fin,borderColor:'#2b5fb0',backgroundColor:g,borderWidth:3,fill:true,tension:.35,
+      pointRadius:c=>c.dataIndex===lastIdx?7:5,pointBackgroundColor:'#fff',pointBorderWidth:3,
+      pointBorderColor:c=>c.dataIndex===lastIdx?'#1a9d5a':'#2b5fb0',pointHoverRadius:8}
+  ]},options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    scales:{y:{beginAtZero:true,max:100,ticks:{font:{size:10.5},callback:v=>v+'%'},grid:{color:'#eef1f6'}},x:{ticks:{font:{size:10.5}},grid:{display:false}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y+'%'}}},
+    animation:{duration:1100,easing:'easeOutQuart'},
+    animations:{y:{from:ctx2=>ctx2.chart.chartArea?ctx2.chart.chartArea.bottom:0,duration:1100,easing:'easeOutQuart',delay:c=>c.dataIndex*120}}}});
+  cdChartObj._sid=sess.SessionID;
 }
 // ยกเลิก listener เมื่อออกจากหน้า (กัน memory leak / อ่าน quota เปล่า)
 function cdCleanup(){ if(cdUnsub){ cdUnsub(); cdUnsub=null; } }
+
+/* ---- ตัวอย่างสิ่งที่จะ Export ---- */
+function ovSetExFilter(f){
+  ovExFilter=f;
+  document.querySelectorAll('#ovExSeg button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));
+  ovRenderExport_();
+}
+function cdExportRows_(d){
+  const list = ovExFilter==='diff' ? d.rows.filter(a=>a._round!==1) : d.rows;
+  return list.concat(d.extras);
+}
+function ovRoundTag_(r){ return r ? `<span class="ov-rd" style="background:${RD_COLORS[Math.min(r,4)]}">${esc(roundName_(r))}</span>` : '<span class="muted">—</span>'; }
+function ovRenderExport_(){
+  const d=cdScopeData; if(!d) return;
+  const rows=cdExportRows_(d);
+  document.getElementById('ovExSum').innerHTML=`<span style="background:#eef3fb;color:var(--navy2)">ขอบเขต: ${esc(scopeText_(d.sess))}</span>
+    <span style="background:#e4f6ec;color:var(--ok)">พบ ${d.found}</span><span style="background:#fde4e2;color:var(--danger)">ขาด ${d.missing}</span>
+    <span style="background:#fef3d6;color:#a67c00">เกิน ${d.extra}</span><span style="background:#f1f4f9;color:var(--muted)">จะ Export ${rows.length} แถว</span>`;
+  const LIM=100;
+  document.getElementById('ovExBody').innerHTML = rows.length ? rows.slice(0,LIM).map(a=>{
+    const cls=a._state==='พบ'?'ok':(a._state==='ขาด'?'miss':'ext');
+    return `<tr><td><b>${esc(a.wfdcId)}</b></td><td>${esc(a.makroTag||'-')}</td><td>${esc(a.name||'')}</td><td>${esc(a.category||'-')}</td><td>${esc(a.zone||'-')}</td><td>${ovRoundTag_(a._round)}</td><td><span class="ov-res ${cls}">${a._state}</span></td></tr>`;
+  }).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:18px">ไม่มีรายการ</td></tr>';
+  document.getElementById('ovExNote').innerHTML = (rows.length>LIM?`แสดง ${LIM} แถวแรก จาก ${rows.length} — ในไฟล์จะมีครบทุกแถว · `:'')+
+    'ของที่อยู่นอกโซน/ประเภทของรอบนี้จะไม่ถูกดึงมา (ยกเว้นที่สแกนเจอ จะขึ้นเป็น "เกิน") · ท้าย PDF มีช่องเซ็น ผู้นับ / ผู้ตรวจสอบ / ผู้อนุมัติ';
+}
 
 /* ============ DIFF REPORT (Regular → Count 1 → Count 2 → Count 3) ============
    1 session มีได้ 4 round: Regular=round 1, Count 1=round 2, Count 2=round 3, Count 3=round 4
@@ -2030,53 +2390,109 @@ async function cdBuildDiffData_(sid){
 
 function diffPct_(n,t){ return t? +( (n/t*100).toFixed(1) ) : 0; }
 
-const DIFF_COLORS={1:'var(--navy)',2:'#2b5fb0',3:'#7a4fc0',4:'var(--red)'};
+function dvRing_(r,pct,color,big){ // วงแหวน SVG
+  const R=big?62:38, S=big?150:92, len=2*Math.PI*R;
+  return `<svg viewBox="0 0 ${S} ${S}"><circle class="trk" cx="${S/2}" cy="${S/2}" r="${R}"/><circle class="bar" cx="${S/2}" cy="${S/2}" r="${R}" ${color?`stroke="${color}"`:''} data-len="${len}" data-p="${pct}" style="stroke-dasharray:${len};stroke-dashoffset:${len}"/></svg>`;
+}
+function dvAnimate_(root, play){
+  root.querySelectorAll('.xr .bar').forEach(c=>{ const len=+c.dataset.len, p=Math.max(0,Math.min(100,+c.dataset.p||0));
+    if(!play){ c.style.transition='none'; c.style.strokeDashoffset=len*(1-p/100); return; }
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ c.style.transition='stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1) .25s'; c.style.strokeDashoffset=len*(1-p/100); })); });
+  root.querySelectorAll('[data-w]').forEach((b,i)=>{
+    if(!play){ b.style.transition='none'; b.style.width=b.dataset.w+'%'; return; }
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.transition=`width 1s cubic-bezier(.2,.8,.2,1) ${0.4+i*0.25}s`; b.style.width=b.dataset.w+'%'; })); });
+  root.querySelectorAll('[data-cnt]').forEach(el=>{ const to=+el.dataset.cnt, dec=+(el.dataset.dec||0), suf=el.dataset.suf||'';
+    if(!play){ el.textContent=to.toFixed(dec)+suf; return; }
+    el.dataset.v=0; ovCount_(el,to,dec,suf); });
+}
+function dvRender_(d, play){
+  const s=d.session||{}, st=s.Status, T=d.expectedTotal, rd=d.roundsDone;
+  const missRows=d.all.filter(x=>x.type==='missing');
+  const regFound=T-missRows.length, stillMiss=missRows.filter(x=>!x.resolved).length, finFound=T-stillMiss;
+  const regPct=pc_(regFound,T), finPct=pc_(finFound,T);
+  const nDiff=d.all.length, resolved=nDiff-d.stillOpen, resPct= nDiff? pc_(resolved,nDiff) : 100;
+  const foundAt={2:0,3:0,4:0}; missRows.forEach(x=>{ if(x.resolvedRound) foundAt[x.resolvedRound]++; });
+  const delta=+(finPct-regPct).toFixed(1);
+  let head, stHtml, openCls='';
+  if(st==='done'){
+    if(d.stillOpen===0){ head='นับครบ ทุกรายการตรงกับระบบ'; stHtml='<span class="dv-status"><i></i> ปิดจบ · ไม่มี Diff ค้าง</span>'; }
+    else { head='ปิดจบแล้ว — ยังมี Diff ค้าง '+d.stillOpen+' รายการ'; stHtml='<span class="dv-status warn"><i></i> ปิดจบ · Diff ค้าง '+d.stillOpen+'</span>'; openCls=' open'; }
+  }else{
+    head=(st==='round_closed'?'ปิด '+roundName_(rd)+' แล้ว — รอเริ่มรอบถัดไป':'กำลังนับ '+roundName_(rd))+(d.stillOpen?' · Diff ค้าง '+d.stillOpen:'');
+    stHtml='<span class="dv-status live"><i></i> ยังไม่ปิดจบ</span>'; if(d.stillOpen) openCls=' open';
+  }
+  const jw=n=>T? +(n/T*100).toFixed(2) : 0;
+  const jseg=[[regFound,'#9fb6d8','Regular'],[foundAt[2],'#4f86d6','Count 1'],[foundAt[3],'#a07ce0','Count 2'],[foundAt[4],'#ff6b63','Count 3']].slice(0,Math.max(1,Math.min(4,rd)));
+  const hero=`<div class="dv-hero${openCls} ov-rv" style="--i:0">
+    <div class="xr" style="width:150px;height:150px">${dvRing_(0,resPct,'#34c27a',true)}
+      <div class="mid"><div><b data-cnt="${resPct}" data-dec="${resPct%1?1:0}" data-suf="%">0%</b><span>${nDiff?'Diff แก้ได้แล้ว':'ไม่มี Diff เลย'}</span></div></div></div>
+    <div>
+      <div class="dv-kick">Overall Result · ผลรวมสุดท้าย</div>
+      <h3>${esc(head)}</h3>
+      <div class="dv-acc">
+        <div class="box"><small>พบของ ตอน Regular</small><b data-cnt="${regPct}" data-dec="${regPct%1?1:0}" data-suf="%">0%</b></div>
+        <div class="arrow">➜</div>
+        <div class="box after"><small>พบของ หลัง Count 1–3</small><b data-cnt="${finPct}" data-dec="${finPct%1?1:0}" data-suf="%">0%</b></div>
+        ${delta?`<div class="dv-delta${delta<0?' neg':''}">${delta>0?'▲ +':'▼ '}${delta}%</div>`:''}
+      </div>
+    </div>
+    <div class="dv-side">${stHtml}
+      <div class="dv-pill"><span>Diff ทั้งหมด</span><b data-cnt="${nDiff}">0</b></div>
+      <div class="dv-pill"><span>✓ แก้แล้ว</span><b data-cnt="${resolved}" style="color:#7ee2ad">0</b></div>
+      <div class="dv-pill"><span>✕ ยังค้าง</span><b data-cnt="${d.stillOpen}" style="color:${d.stillOpen?'#ffb4ae':'inherit'}">0</b></div>
+    </div>
+    <div class="dv-journey">
+      <div class="lbl"><span>ของ ${T} รายการ — ถูกนับเจอในรอบไหน</span><span>${finFound} / ${T}</span></div>
+      <div class="dv-jbar">${jseg.map(x=>`<i style="background:${x[1]}" data-w="${jw(x[0])}"></i>`).join('')}<i style="background:rgba(255,255,255,.28)" data-w="${jw(stillMiss)}"></i></div>
+      <div class="dv-jlg">${jseg.map((x,i)=>`<span><em style="background:${x[1]}"></em>${x[2]} ${i?'+':''}${x[0]}</span>`).join('')}<span><em style="background:rgba(255,255,255,.28)"></em>ยังไม่เจอ ${stillMiss}</span></div>
+    </div>
+  </div>`;
+
+  // Timeline (การ์ดรอบ + funnel)
+  const railW = rd>1 ? Math.min(100,(rd-1)/3*100) : 0;
+  let tl=`<div class="ov-sec dv-sec ov-rv" style="--i:2"><span class="dot"></span>เส้นทางแต่ละรอบ <small>· Diff ที่พบ และที่ตามแก้ได้ในแต่ละรอบ</small></div>
+    <div class="dv-tl"><div class="dv-rail"><i data-w="${railW}"></i></div>
+    <div class="dv-rc ov-rv ${rd===1&&st!=='done'?'cur':''}" style="--i:3"><div class="node" style="background:${RD_COLORS[1]}">R</div><div class="nm">Regular Count</div><div class="sub">นับทั้งหมด</div>
+      <div class="big" data-cnt="${d.diffAfterRegular}">0</div><div class="sub">Diff ที่พบ</div><div class="mini"><span>นับ <b>${T}</b></span><span>เจอ <b>${regFound}</b></span></div></div>`;
+  for(let r=2;r<=4;r++){
+    const on=rd>=r, skip=!on && st==='done', cur=rd===r && st!=='done';
+    const left=on ? d.base[r]-d.resolvedAt[r] : 0;
+    tl+=`<div class="dv-rc ov-rv ${on?'':'lock'} ${cur?'cur':''}" style="--i:${r+2}"><div class="node" style="background:${RD_COLORS[r]}">${r-1}</div><div class="nm">${roundName_(r)}</div>
+      <div class="sub">${skip?'ไม่ต้องนับ':(on?'ตามนับเฉพาะ Diff':'ยังไม่เริ่ม')}</div>
+      ${on?`<div class="big" style="color:var(--ok)">+<span data-cnt="${d.resolvedAt[r]}">0</span> <small>แก้แล้ว</small></div><div class="sub">จาก ${d.base[r]} รายการ</div><div class="mini"><span>ค้าง <b style="color:${left?'var(--warn)':'inherit'}">${left}</b></span></div>`
+          :`<div class="big">—</div><div class="sub">${skip?'Diff หมดก่อนถึงรอบนี้':'รอปิดรอบก่อนหน้า'}</div><div class="mini"><span>🔒 ${skip?'ข้าม':'ล็อก'}</span></div>`}</div>`;
+  }
+  tl+='</div>';
+
+  // Donuts
+  const lg=(c,t,v)=>`<div><em style="background:${c}"></em>${t}<b>${v}</b></div>`;
+  let dn=`<div class="ov-sec dv-sec ov-rv" style="--i:7"><span class="dot"></span>สัดส่วนรายรอบ</div><div class="dv-dr">
+    <div class="dv-dc ov-rv" style="--i:8;--c:${RD_COLORS[1]}"><h4><span class="d"></span>Regular Count · อัตราไอเทมที่พบ</h4>
+      <div class="body"><div class="xr">${dvRing_(0,regPct,null,false)}<div class="mid"><div><b data-cnt="${regPct}" data-dec="${regPct%1?1:0}" data-suf="%">0%</b><span>พบ</span></div></div></div>
+      <div class="dv-lg">${lg(RD_COLORS[1],'พบ',regFound)}${lg('#eef1f6','ไม่พบ (Diff)',missRows.length)}${d.all.length-missRows.length?lg('#f3d27a','เกิน',d.all.length-missRows.length):''}</div></div>
+      <div class="foot"><span>นับทั้งหมดครั้งแรก</span><b>${T} รายการ</b></div></div>`;
+  for(let r=2;r<=4;r++){
+    const on=rd>=r, p=on?pc_(d.resolvedAt[r],d.base[r]):0;
+    dn+=`<div class="dv-dc ov-rv ${on?'':'lock'}" style="--i:${r+7};--c:${RD_COLORS[r]}"><h4><span class="d"></span>${roundName_(r)} · สัดส่วนที่แก้ได้</h4>
+      <div class="body"><div class="xr">${dvRing_(0,p,null,false)}<div class="mid"><div>${on?`<b data-cnt="${p}" data-dec="${p%1?1:0}" data-suf="%">0%</b><span>แก้แล้ว</span>`:`<b>—</b><span>${st==='done'?'ข้าม':'ยังไม่เริ่ม'}</span>`}</div></div></div>
+      <div class="dv-lg">${lg(RD_COLORS[r],'แก้แล้ว',on?d.resolvedAt[r]:0)}${lg('#eef1f6','ยังคง Diff',on?d.base[r]-d.resolvedAt[r]:0)}</div></div>
+      <div class="foot"><span>ตามนับ Diff จาก ${roundName_(r-1)}</span><b>${on?d.base[r]+' รายการ':(st==='done'?'ไม่ต้องนับ':'ยังไม่เริ่ม')}</b></div></div>`;
+  }
+  dn+='</div>';
+  const box=document.getElementById('diffV2');
+  box.innerHTML=hero+tl+dn;
+  dvAnimate_(box, play);
+}
+
 async function cdLoadDiff(sid){
   const noR=document.getElementById('diffNoRounds'), body=document.getElementById('diffContent');
   try{ diffData = await cdBuildDiffData_(sid); }catch(e){ toast(e.message,'err'); return; }
   const d=diffData;
-  if(d.diffAfterRegular===0 && d.roundsDone<2 && !d.all.length){ noR.style.display='block'; body.style.display='none'; return; }
+  if(!d.expectedTotal && !d.all.length){ noR.style.display='block'; body.style.display='none'; return; }
   noR.style.display='none'; body.style.display='block';
-
-  // การ์ดรายรอบ
-  const circ=['①','②','③','④'];
-  let cards=`<div class="diff-round-card r1"><div class="lbl">① Regular Count</div><div class="val">${d.expectedTotal} รายการ</div>
-    <div class="meta"><span>นับทั้งหมด <b>${d.expectedTotal}</b></span><span>พบ Diff <b style="color:var(--danger)">${d.diffAfterRegular}</b></span></div></div>`;
-  for(let r=2;r<=DIFF_MAX_ROUND;r++){
-    const on=d.roundsDone>=r;
-    cards+=`<div class="diff-round-card r${r} ${on?'':'pending'}"><div class="lbl">${circ[r-1]} ${roundName_(r)} (เฉพาะ Diff)</div>
-      <div class="val">${on? d.base[r]+' รายการ' : '🔒 ยังไม่เริ่ม'}</div>
-      <div class="meta"><span>ตามนับ <b>${on?d.base[r]:0}</b></span><span>ยังคง Diff <b style="color:var(--warn)">${on?(d.base[r]-d.resolvedAt[r]):0}</b></span></div></div>`;
-  }
-  document.getElementById('diffRoundPicker').innerHTML=cards;
-
-  // Funnel
-  let fn=`<div class="diff-funnel-step"><div class="n">${d.diffAfterRegular}</div><div class="t">Diff หลัง Regular Count</div></div>`;
-  for(let r=2;r<=DIFF_MAX_ROUND;r++) fn+=`<div class="diff-funnel-arrow">→</div><div class="diff-funnel-step"><div class="n">${d.resolvedAt[r]} <small>แก้แล้ว</small></div><div class="t">แก้ไขได้ที่ ${roundName_(r)}</div></div>`;
-  fn+=`<div class="diff-funnel-arrow">→</div><div class="diff-funnel-step final"><div class="n">${d.stillOpen}</div><div class="t">ยังคง Diff ณ ปัจจุบัน</div></div>`;
-  document.getElementById('diffFunnelRow').innerHTML=fn;
-
-  // Donuts
-  const donut=(cls,color,title,pct,lblIn,legend,footL,footR)=>`<div class="diff-donut-card ${cls}">
-    <h4><span class="dot" style="background:${color}"></span> ${title}</h4>
-    <div class="diff-donut-body"><div class="diff-donut" style="--p:${pct};--c:${color}"><div class="val"><b>${pct}%</b><span>${lblIn}</span></div></div>
-      <div class="diff-donut-legend">${legend}</div></div>
-    <div class="diff-donut-foot"><span>${footL}</span><b>${footR}</b></div></div>`;
-  const lg=(c,t,v,op)=>`<div class="row"${op?' style="opacity:.65"':''}><span class="sw" style="background:${c}"></span> ${t} <b>${v}</b></div>`;
-  const regPct=diffPct_(d.diffAfterRegular,d.expectedTotal);
-  let dn=donut('creg',DIFF_COLORS[1],'Regular Count · อัตรา Diff ที่พบ',regPct,'Diff',
-    lg(DIFF_COLORS[1],'พบ Diff',d.diffAfterRegular)+lg('#f1ecec','ตรงระบบ',d.expectedTotal-d.diffAfterRegular),'นับทั้งหมดครั้งแรก',d.expectedTotal+' รายการ');
-  for(let r=2;r<=DIFF_MAX_ROUND;r++){
-    const pct=diffPct_(d.resolvedAt[r],d.base[r]);
-    dn+=donut('c'+r,DIFF_COLORS[r],roundName_(r)+' · สัดส่วนที่แก้ได้',d.roundsDone>=r?pct:0,'แก้แล้ว',
-      lg(DIFF_COLORS[r],'แก้แล้ว',d.resolvedAt[r])+lg('#f1ecec','ยังคง Diff',d.base[r]-d.resolvedAt[r]),
-      'ตามนับเฉพาะ Diff จาก '+roundName_(r-1), d.roundsDone>=r? d.base[r]+' รายการ':'ยังไม่เริ่ม');
-  }
-  const finalResolved=d.all.length-d.stillOpen, finalPct=diffPct_(finalResolved,d.all.length);
-  dn+=donut('cfinal','var(--ok)','ผลรวมสุดท้าย (Overall Result)',finalPct,'แก้แล้ว',
-    lg('var(--ok)','แก้แล้ว',finalResolved)+lg('#f1ecec','ยังไม่แก้',d.stillOpen)+lg('var(--navy)','Diff ทั้งหมด',d.all.length,true),
-    'ความแม่นยำ Regular ตั้งต้น', diffPct_(d.expectedTotal-d.diffAfterRegular,d.expectedTotal)+'%');
-  document.getElementById('diffDonutRow').innerHTML=dn;
+  const play = diffAnimKey!==sid; diffAnimKey=sid;
+  if(play) cdPlayAnim_();
+  dvRender_(d, play);
 
   // ตัวกรองโซน
   const zoneSel=document.getElementById('diffZone');
@@ -2112,19 +2528,21 @@ function diffRenderTable(){
     return true;
   });
   document.getElementById('diffCountPill').textContent='แสดง '+rows.length+' รายการ';
+  const sessDone = diffData.session && diffData.session.Status==='done';
+  const bd = v => diffBadge_(sessDone && v==='pending' ? 'na' : v);
   document.getElementById('diffTbody').innerHTML = rows.map(a=>{
     const precount = a.type==='extra' ? diffBadge_('na') : diffBadge_('ok');
     const summary = a.resolved
       ? `<span class="diff-summary-tag resolved">แก้แล้ว <span class="r">${esc(a.resolvedAt)}</span></span>`
-      : `<span class="diff-summary-tag open">ยังไม่แก้ <span class="r">${diffData.roundsDone>=4?'ครบ Count 3':'รอนับต่อ'}</span></span>`;
+      : `<span class="diff-summary-tag open">ยังไม่แก้ <span class="r">${sessDone?'ปิดจบแล้ว':'รอนับต่อ'}</span></span>`;
     return `<tr>
       <td><span class="diff-wfdc">${esc(a.wfdcId)}</span> ${a.makroTag&&a.makroTag!=='-'?`<span class="diff-makro">· ${esc(a.makroTag)}</span>`:''}<br><span>${esc(a.name||'')}</span></td>
       <td class="c">${a.zone&&a.zone!=='-'?`<span class="diff-zone-chip">${esc(a.zone)}</span>`:'-'}</td>
       <td class="c">${precount}</td>
-      <td class="c">${diffBadge_(a.r[0])}</td>
-      <td class="c">${diffBadge_(a.r[1])}</td>
-      <td class="c">${diffBadge_(a.r[2])}</td>
-      <td class="c">${diffBadge_(a.r[3])}</td>
+      <td class="c">${bd(a.r[0])}</td>
+      <td class="c">${bd(a.r[1])}</td>
+      <td class="c">${bd(a.r[2])}</td>
+      <td class="c">${bd(a.r[3])}</td>
       <td>${summary}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="8" class="empty">ไม่พบรายการที่ตรงตัวกรอง</td></tr>';
@@ -2369,100 +2787,102 @@ async function cdLoadImages_(list, msgEl){
   }
   return map;
 }
-// รวมข้อมูลรอบ + รายการทุกตัว (พบ/ขาด/เกิน)
+// ข้อมูลสำหรับ Export — เฉพาะของในขอบเขต (โซน/ประเภท) ของรอบนับ + ของเกินที่สแกนเจอ
 async function cdBuildReportData_(sid){
-  const r=(await api('countResult',{sessionId:sid})).result;
-  const allAssets=(await api('listAssets',{})).assets;
-  const items=(await api('countResult',{sessionId:sid})).result; // already have r
-  // สร้าง set ของที่พบ จาก missingItems (ขาด) + total
-  const missingSet={}; r.missingItems.forEach(m=>missingSet[m.wfdcId]=true);
-  const extraSet={}; r.extraItems.forEach(m=>extraSet[m.wfdcId]=true);
-  const rows=allAssets.filter(a=>a.status!=='จำหน่ายแล้ว').map(a=>({
-    ...a, _state: missingSet[a.wfdcId]?'ขาด':'พบ'
-  }));
-  const extraRows=r.extraItems.map(m=>({ wfdcId:m.wfdcId, name:'(ไม่มีในระบบ)', _state:'เกิน' }));
-  return { r, rows, extraRows, session:cdCurrent };
+  const sess=cdSessions.find(s=>s.SessionID===sid)||cdCurrent;
+  cdAssetsCache=null; // ดึงทะเบียนล่าสุดก่อนออกรายงาน
+  const d=await cdScope_(sess);
+  const rows=cdExportRows_(d);
+  const withPhoto=document.getElementById('ovExPhoto').checked;
+  const filterTxt= ovExFilter==='diff' ? 'เฉพาะรายการที่เคยเป็น Diff' : 'ทุกรายการในขอบเขต';
+  return { d, rows, session:sess, withPhoto, filterTxt };
+}
+function cdReportHeadLines_(d, session, filterTxt){
+  const t=d.total;
+  return [
+    'รอบนับ: '+session.SessionID+'    สิ้นสุด/อยู่ที่: '+roundName_(session.Round)+'    สถานะ: '+statusLabel_(session.Status,session.Round),
+    'ขอบเขต: โซน '+(session.Zone||'ทั้งคลัง')+' · ประเภท '+(session.Category||'ทุกประเภท')+'    ในขอบเขต '+t+' รายการ    ('+filterTxt+')',
+    'ผู้นับ: '+session.CreatedBy+'    วันที่: '+fmtDate(session.CreatedDate),
+    `พบ ${d.found} (${pc_(d.found,t)}%) · ขาด ${d.missing} (${pc_(d.missing,t)}%) · เกิน ${d.extra}    อัตราพบ Regular ${d.regPct}% → สุดท้าย ${d.finalPct}%`
+  ];
 }
 async function exportCountPDF(){
-  const msg=document.getElementById('cdExMsg'); const sid=cdCurrent.SessionID;
+  const msg=document.getElementById('cdExMsg'); if(!cdCurrent) return; const sid=cdCurrent.SessionID;
   msg.textContent='กำลังสร้างรายงาน...';
   try{
-    const {r,rows,extraRows,session}=await cdBuildReportData_(sid);
-    const imgMap=await cdLoadImages_(rows, msg);
+    const {d,rows,session,withPhoto,filterTxt}=await cdBuildReportData_(sid);
+    const imgMap= withPhoto ? await cdLoadImages_(rows.filter(a=>a.assetId), msg) : {};
     msg.textContent='กำลังสร้าง PDF...';
     const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     registerThaiFont_(doc);
     const draft = session.Status!=='done';
-    // header
     doc.setFont('Sarabun','bold'); doc.setFontSize(15); doc.text('รายงานการนับสต็อกทรัพย์สิน',14,16);
     doc.setFont('Sarabun','normal'); doc.setFontSize(9);
     doc.text('CJ LOGISTICS · WFDC',14,22);
-    doc.text('รอบนับ: '+session.SessionID+'    รอบที่: '+session.Round,14,28);
-    doc.text('ผู้นับ: '+session.CreatedBy+'    วันที่: '+fmtDate(session.CreatedDate)+'    สถานะ: '+session.Status,14,33);
-    if(draft){ doc.setTextColor(200,0,0); doc.setFont('Sarabun','bold'); doc.text('*** ฉบับร่าง — ยังไม่ปิดรอบ ***',14,39); doc.setTextColor(0,0,0); doc.setFont('Sarabun','normal'); }
-    const pct=n=> r.total?(n/r.total*100).toFixed(1):'0.0';
-    let y=draft?45:41;
-    doc.setFontSize(10); doc.setFont('Sarabun','bold');
-    doc.text(`ทั้งหมด ${r.total} · พบ ${r.found}(${pct(r.found)}%) · ขาด ${r.missing}(${pct(r.missing)}%) · เกิน ${r.extra}(${pct(r.extra)}%)`,14,y);
-    y+=4;
-    // ตารางครบทุกตัว พร้อมรูป
-    const body=rows.map(a=>[a.wfdcId, a.makroTag||'-', a.name, a.category||'-', a.zone||'-', a._state, '']);
-    extraRows.forEach(e=>body.push([e.wfdcId,'-','(ไม่มีในระบบ)','-','-','เกิน','']));
+    const L=cdReportHeadLines_(d,session,filterTxt);
+    let y=28; L.slice(0,3).forEach(t=>{ doc.text(t,14,y); y+=5; });
+    if(draft){ doc.setTextColor(200,0,0); doc.setFont('Sarabun','bold'); doc.text('*** ฉบับร่าง — ยังไม่ปิดจบรอบนับ ***',14,y); doc.setTextColor(0,0,0); doc.setFont('Sarabun','normal'); y+=5; }
+    doc.setFontSize(10); doc.setFont('Sarabun','bold'); doc.text(L[3],14,y+1); y+=4;
+    const head=['WFDC','Makro','ชื่อ','หมวด','โซน','เจอในรอบ','ผล']; if(withPhoto) head.push('รูป');
+    const body=rows.map(a=>{ const r=[a.wfdcId, a.makroTag||'-', a.name||'', a.category||'-', a.zone||'-', a._round?roundName_(a._round):'-', a._state]; if(withPhoto) r.push(''); return r; });
     doc.autoTable({
-      startY:y+2, head:[['WFDC','Makro','ชื่อ','หมวด','โซน','ผล','รูป']],
-      body, styles:{font:'Sarabun',fontStyle:'normal',fontSize:7,cellPadding:1.5,minCellHeight:16,valign:'middle'},
+      startY:y+2, head:[head], body,
+      styles:{font:'Sarabun',fontStyle:'normal',fontSize:7,cellPadding:1.5,minCellHeight:withPhoto?16:6,valign:'middle'},
       headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]},
-      columnStyles:{6:{cellWidth:18}},
-      didParseCell:function(d){ if(d.section==='body'&&d.column.index===5){ const v=d.cell.raw;
-        if(v==='ขาด')d.cell.styles.textColor=[200,0,0]; else if(v==='เกิน')d.cell.styles.textColor=[200,140,0]; else d.cell.styles.textColor=[0,140,0]; } },
-      didDrawCell:function(d){ if(d.section==='body'&&d.column.index===6){ const a=rows[d.row.index]; const img=a&&imgMap[a.assetId];
-        if(img){ try{ doc.addImage(img.data,img.fmt,d.cell.x+1,d.cell.y+1,14,14); }catch(e){} } } }
+      columnStyles: withPhoto ? {7:{cellWidth:18}} : {},
+      didParseCell:function(c){ if(c.section==='body'&&c.column.index===6){ const v=c.cell.raw;
+        if(v==='ขาด')c.cell.styles.textColor=[200,0,0]; else if(v==='เกิน')c.cell.styles.textColor=[200,140,0]; else c.cell.styles.textColor=[0,140,0]; } },
+      didDrawCell:function(c){ if(withPhoto&&c.section==='body'&&c.column.index===7){ const a=rows[c.row.index]; const img=a&&imgMap[a.assetId];
+        if(img){ try{ doc.addImage(img.data,img.fmt,c.cell.x+1,c.cell.y+1,14,14); }catch(e){} } } }
     });
-    // ช่องเซ็น
     let sy=doc.lastAutoTable.finalY+16; if(sy>270){doc.addPage();sy=20;}
     doc.setFont('Sarabun','normal'); doc.setFontSize(9);
     doc.text('ผู้นับ ............................',14,sy);
     doc.text('ผู้ตรวจสอบ ............................',78,sy);
     doc.text('ผู้อนุมัติ ............................',145,sy);
     doc.save('CountReport_'+session.SessionID+'_'+today()+'.pdf');
-    msg.textContent='ดาวน์โหลด PDF แล้ว';
+    msg.textContent='ดาวน์โหลด PDF แล้ว ('+rows.length+' แถว)';
   }catch(e){ msg.textContent=''; toast(e.message,'err'); }
 }
 async function exportCountExcel(){
-  const msg=document.getElementById('cdExMsg'); const sid=cdCurrent.SessionID;
+  const msg=document.getElementById('cdExMsg'); if(!cdCurrent) return; const sid=cdCurrent.SessionID;
   msg.textContent='กำลังสร้างรายงาน...';
   try{
-    const {r,rows,extraRows,session}=await cdBuildReportData_(sid);
-    const imgMap=await cdLoadImages_(rows, msg);
+    const {d,rows,session,withPhoto,filterTxt}=await cdBuildReportData_(sid);
+    const imgMap= withPhoto ? await cdLoadImages_(rows.filter(a=>a.assetId), msg) : {};
     msg.textContent='กำลังสร้าง Excel...';
-    const wb=new ExcelJS.Workbook();
-    const pct=n=> r.total?(n/r.total*100).toFixed(1):'0.0';
-    // sheet สรุป
+    const wb=new ExcelJS.Workbook(); const t=d.total;
     const s1=wb.addWorksheet('สรุป');
     s1.addRow(['รายงานการนับสต็อกทรัพย์สิน']); s1.getRow(1).font={bold:true,size:14};
-    s1.addRow(['รอบนับ',session.SessionID]); s1.addRow(['รอบที่',session.Round]);
-    s1.addRow(['ผู้นับ',session.CreatedBy]); s1.addRow(['วันที่',fmtDate(session.CreatedDate)]); s1.addRow(['สถานะ',session.Status]);
-    if(session.Status!=='done') s1.addRow(['หมายเหตุ','*** ฉบับร่าง — ยังไม่ปิดรอบ ***']);
+    s1.addRow(['รอบนับ',session.SessionID]); s1.addRow(['สิ้นสุด/อยู่ที่',roundName_(session.Round)]); s1.addRow(['สถานะ',statusLabel_(session.Status,session.Round)]);
+    s1.addRow(['โซน',session.Zone||'ทั้งคลัง']); s1.addRow(['ประเภท',session.Category||'ทุกประเภท']); s1.addRow(['รายการที่ Export',filterTxt]);
+    s1.addRow(['ผู้นับ',session.CreatedBy]); s1.addRow(['วันที่',fmtDate(session.CreatedDate)]);
+    if(session.Status!=='done') s1.addRow(['หมายเหตุ','*** ฉบับร่าง — ยังไม่ปิดจบรอบนับ ***']);
     s1.addRow([]);
-    s1.addRow(['ทั้งหมด',r.total]); s1.addRow(['พบ',r.found,pct(r.found)+'%']);
-    s1.addRow(['ขาด',r.missing,pct(r.missing)+'%']); s1.addRow(['เกิน',r.extra,pct(r.extra)+'%']);
-    // sheet รายการ (ครบทุกตัว + รูปฝัง)
-    const s2=wb.addWorksheet('รายการทั้งหมด');
-    s2.columns=[{header:'WFDC',width:16},{header:'Makro',width:14},{header:'ชื่อ',width:24},{header:'หมวด',width:16},{header:'โซน',width:16},{header:'ผล',width:10},{header:'รูป',width:16}];
+    s1.addRow(['ในขอบเขต',t]); s1.addRow(['พบ',d.found,pc_(d.found,t)+'%']);
+    s1.addRow(['ขาด',d.missing,pc_(d.missing,t)+'%']); s1.addRow(['เกิน',d.extra]);
+    s1.addRow(['อัตราพบตอน Regular',d.regPct+'%']); s1.addRow(['อัตราพบสุดท้าย',d.finalPct+'%']);
+    s1.addRow([]); s1.addRow(['เจอในรอบ','จำนวน']);
+    for(let r=1;r<=4;r++) s1.addRow([roundName_(r), d.byRound[r]]);
+    s1.getColumn(1).width=22; s1.getColumn(2).width=28;
+    const s2=wb.addWorksheet('รายการ');
+    const cols=[{header:'WFDC',width:16},{header:'Makro',width:14},{header:'ชื่อ',width:28},{header:'หมวด',width:16},{header:'โซน',width:14},{header:'เจอในรอบ',width:14},{header:'ผล',width:10}];
+    if(withPhoto) cols.push({header:'รูป',width:16});
+    s2.columns=cols;
     s2.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; s2.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0D2A52'}};
+    const color={'พบ':'FF1A9D5A','ขาด':'FFC80000','เกิน':'FFC88C00'};
     let rowN=2;
-    const allRows=rows.concat(extraRows.map(e=>({wfdcId:e.wfdcId,makroTag:'-',name:'(ไม่มีในระบบ)',category:'-',zone:'-',_state:'เกิน'})));
-    for(const a of allRows){
-      const row=s2.addRow([a.wfdcId,a.makroTag||'-',a.name,a.category||'-',a.zone||'-',a._state]);
-      row.height=42;
-      const img=imgMap[a.assetId];
-      if(img){ try{ const id=wb.addImage({base64:img.data, extension:(img.fmt==='PNG'?'png':'jpeg')});
-        s2.addImage(id,{tl:{col:6,row:rowN-1},ext:{width:52,height:52}}); }catch(e){} }
+    for(const a of rows){
+      const row=s2.addRow([a.wfdcId,a.makroTag||'-',a.name||'',a.category||'-',a.zone||'-',a._round?roundName_(a._round):'-',a._state]);
+      row.getCell(7).font={bold:true,color:{argb:color[a._state]||'FF000000'}};
+      if(withPhoto){ row.height=42; const img=imgMap[a.assetId];
+        if(img){ try{ const id=wb.addImage({base64:img.data, extension:(img.fmt==='PNG'?'png':'jpeg')});
+          s2.addImage(id,{tl:{col:7,row:rowN-1},ext:{width:52,height:52}}); }catch(e){} } }
       rowN++;
     }
     const buf=await wb.xlsx.writeBuffer();
     dl(new Blob([buf]),'CountReport_'+session.SessionID+'_'+today()+'.xlsx');
-    msg.textContent='ดาวน์โหลด Excel แล้ว';
+    msg.textContent='ดาวน์โหลด Excel แล้ว ('+rows.length+' แถว)';
   }catch(e){ msg.textContent=''; toast(e.message,'err'); }
 }
 
