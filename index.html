@@ -97,6 +97,53 @@ textarea.inp{min-height:70px;resize:vertical}
   padding:12px 18px;border-radius:10px;font-size:14px;z-index:200;box-shadow:0 6px 24px rgba(0,0,0,.3);opacity:0;transition:.25s;pointer-events:none;max-width:90%}
 .toast.show{opacity:1}
 .toast.ok{background:#137a44}.toast.err{background:#b21b13}
+.toast.warn{background:#b7791f}
+
+/* ===== Count workflow: stepper / checklist / scan popup ===== */
+.cs-stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.cs-step{position:relative;border:1.5px solid var(--line);border-radius:12px;padding:10px 10px 9px;background:#fafbfd;text-align:left;font:inherit;color:inherit;cursor:default;transition:.2s}
+.cs-step .k{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.cs-step .t{font-weight:800;font-size:14px;margin-top:2px}
+.cs-step .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+.cs-step.done{border-color:#bfe6cf;background:#f0faf4}
+.cs-step.done .t{color:var(--ok)}
+.cs-step.active{border-color:var(--navy2);background:#eef3fb;box-shadow:0 0 0 3px rgba(22,58,107,.12)}
+.cs-step.active .t{color:var(--navy)}
+.cs-step.active::after{content:"";position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--red);animation:csPulse 1.2s infinite}
+.cs-step.next{border-color:var(--navy2);background:var(--navy);color:#fff;cursor:pointer}
+.cs-step.next .k,.cs-step.next .s{color:#c9d6ea}
+.cs-step.next:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(13,42,82,.25)}
+.cs-step.locked{opacity:.45;filter:grayscale(1)}
+.cs-step.skipped{opacity:.55}
+@keyframes csPulse{0%{box-shadow:0 0 0 0 rgba(226,35,26,.5)}70%{box-shadow:0 0 0 7px rgba(226,35,26,0)}100%{box-shadow:0 0 0 0 rgba(226,35,26,0)}}
+@media(max-width:560px){.cs-stepper{grid-template-columns:repeat(2,1fr)}}
+.cs-banner{border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.cs-banner.info{background:#eef3fb;border:1px solid #cfdcf1}
+.cs-banner.okb{background:#f0faf4;border:1px solid #bfe6cf}
+.cs-banner.warnb{background:#fff8e6;border:1px solid #f3dea0}
+.cs-banner .ic{font-size:22px;line-height:1}
+.cs-prog{height:8px;border-radius:6px;background:#e9edf4;overflow:hidden;margin:8px 0 4px}
+.cs-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),#34c27a);transition:width .4s}
+.cs-check{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.cs-check .ci{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+.cs-check .ci:last-child{border-bottom:0}
+.cs-check .ci .bx{width:18px;height:18px;border-radius:5px;border:2px solid #c3ccd9;flex:none;display:grid;place-items:center;font-size:12px;color:#fff}
+.cs-check .ci.got{background:#f3fbf6}
+.cs-check .ci.got .bx{background:var(--ok);border-color:var(--ok)}
+.cs-check .ci.got .nm{color:var(--muted);text-decoration:line-through}
+.cs-check .ci.just{animation:csJust 1.2s ease}
+@keyframes csJust{0%{background:#c9f0da}100%{background:#f3fbf6}}
+#scanPop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:260;pointer-events:none}
+#scanPop.show{display:flex}
+#scanPop .box{min-width:260px;max-width:88vw;border-radius:18px;padding:22px 26px;color:#fff;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.35);animation:popIn .22s cubic-bezier(.2,1.4,.4,1)}
+#scanPop .ic{font-size:44px;line-height:1;margin-bottom:6px}
+#scanPop .h{font-size:19px;font-weight:800}
+#scanPop .d{font-size:13.5px;opacity:.92;margin-top:4px;word-break:break-word}
+#scanPop.ok .box{background:linear-gradient(135deg,#149352,#1db86a)}
+#scanPop.dup .box{background:linear-gradient(135deg,#c07a00,#e8a200)}
+#scanPop.warn .box{background:linear-gradient(135deg,#b75d00,#e08a1e)}
+#scanPop.err .box{background:linear-gradient(135deg,#a8160f,#e2231a)}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 
 /* Lightbox พรีวิวรูป */
 #lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;
@@ -229,12 +276,13 @@ td.wrap{white-space:normal}
   color:var(--muted);cursor:pointer;transition:all .15s}
 .cd-tabs button.on{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(13,42,82,.15)}
 
-.diff-round-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.diff-round-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 .diff-round-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
 .diff-round-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
 .diff-round-card.r1::before{background:var(--navy)}
 .diff-round-card.r2::before{background:#2b5fb0}
-.diff-round-card.r3::before{background:var(--red)}
+.diff-round-card.r3::before{background:#7a4fc0}
+.diff-round-card.r4::before{background:var(--red)}
 .diff-round-card .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}
 .diff-round-card .val{margin-top:6px;font-size:14.5px;font-weight:700;color:var(--navy)}
 .diff-round-card .meta{margin-top:8px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
@@ -244,7 +292,7 @@ td.wrap{white-space:normal}
 .diff-funnel-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px}
 .diff-funnel-wrap h3{margin:0 0 16px;font-size:14.5px;color:var(--navy);display:flex;align-items:center;gap:8px}
 .diff-funnel-wrap h3 .dot{width:7px;height:7px;border-radius:50%;background:var(--red)}
-.diff-funnel-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;align-items:center}
+.diff-funnel-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;align-items:center}
 .diff-funnel-step{text-align:center;padding:14px 8px;border-radius:12px;background:#f7f9fc}
 .diff-funnel-step .n{font-size:30px;font-weight:800;line-height:1;color:var(--navy)}
 .diff-funnel-step .n small{font-size:14px;font-weight:700;color:var(--muted)}
@@ -254,13 +302,14 @@ td.wrap{white-space:normal}
 .diff-funnel-step.final .n small{color:#cfe0ff}
 .diff-funnel-arrow{display:flex;align-items:center;justify-content:center;color:#c3ccdb;font-size:20px;padding:0 6px}
 
-.diff-donut-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.diff-donut-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
 .diff-donut-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 17px;
   display:flex;flex-direction:column;position:relative;overflow:hidden}
 .diff-donut-card::before{content:"";position:absolute;left:0;top:0;right:0;height:3px}
 .diff-donut-card.creg::before{background:var(--navy)}
 .diff-donut-card.c2::before{background:#2b5fb0}
-.diff-donut-card.c3::before{background:var(--red)}
+.diff-donut-card.c3::before{background:#7a4fc0}
+.diff-donut-card.c4::before{background:var(--red)}
 .diff-donut-card.cfinal::before{background:linear-gradient(90deg,var(--ok),var(--navy))}
 .diff-donut-card h4{margin:0 0 12px;font-size:12.8px;color:var(--navy);display:flex;align-items:center;gap:7px;font-weight:700}
 .diff-donut-card h4 .dot{width:7px;height:7px;border-radius:50%}
@@ -310,7 +359,7 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
 .diff-legend span{display:inline-flex;align-items:center;gap:6px}
 .diff-legend .sw{width:16px;height:16px;border-radius:5px;display:inline-block}
 
-@media(max-width:1050px){ .diff-donut-row{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:1050px){ .diff-round-picker{grid-template-columns:repeat(2,1fr)} }
 @media(max-width:820px){
   .diff-round-picker{grid-template-columns:1fr}
   .diff-funnel-row{grid-template-columns:1fr}
@@ -443,90 +492,17 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
           <!-- ===== TAB: รายงาน Diff (ใหม่) ===== -->
           <div id="cdTabDiff" style="display:none">
 
-            <div id="diffNoRounds" class="empty" style="display:none">รอบนี้นับแค่รอบเดียว (ยังไม่มีการนับซ้ำ) — เมื่อกด "นับซ้ำ" ที่หน้านับสต็อกอย่างน้อย 1 ครั้ง รายงาน Diff จะแสดงที่นี่</div>
+            <div id="diffNoRounds" class="empty" style="display:none">รอบนี้ยังไม่มี Diff และยังไม่ได้เริ่ม Count 1 — เมื่อปิด Regular Count แล้วมี Diff รายงานจะแสดงที่นี่</div>
 
             <div id="diffContent" style="display:none">
-              <div class="diff-round-picker">
-                <div class="diff-round-card r1" id="diffRoundCard1">
-                  <div class="lbl">① Regular Count</div>
-                  <div class="val" id="diffR1Val">–</div>
-                  <div class="meta"><span>นับแล้ว <b id="diffR1Total">0</b></span><span>พบ Diff <b id="diffR1Diff" style="color:var(--danger)">0</b></span></div>
-                </div>
-                <div class="diff-round-card r2" id="diffRoundCard2">
-                  <div class="lbl">② Count 2 (นับซ้ำเฉพาะ Diff)</div>
-                  <div class="val" id="diffR2Val">–</div>
-                  <div class="meta"><span>นับซ้ำ <b id="diffR2Total">0</b></span><span>ยังคง Diff <b id="diffR2Diff" style="color:var(--warn)">0</b></span></div>
-                </div>
-                <div class="diff-round-card r3" id="diffRoundCard3">
-                  <div class="lbl">③ Count 3 (นับซ้ำเฉพาะ Diff)</div>
-                  <div class="val" id="diffR3Val">–</div>
-                  <div class="meta"><span>นับซ้ำ <b id="diffR3Total">0</b></span><span>ยังคง Diff <b id="diffR3Diff" style="color:var(--danger)">0</b></span></div>
-                </div>
-              </div>
+              <div class="diff-round-picker" id="diffRoundPicker"></div>
 
               <div class="diff-funnel-wrap">
                 <h3><span class="dot"></span> สรุปเส้นทางการแก้ปัญหา (Resolution Funnel)</h3>
-                <div class="diff-funnel-row">
-                  <div class="diff-funnel-step"><div class="n" id="fnRegular">0</div><div class="t">Diff หลัง Regular Count</div></div>
-                  <div class="diff-funnel-arrow">→</div>
-                  <div class="diff-funnel-step"><div class="n" id="fnCount2">0</div><div class="t">แก้ไขได้ที่ Count 2</div></div>
-                  <div class="diff-funnel-arrow">→</div>
-                  <div class="diff-funnel-step"><div class="n" id="fnCount3">0</div><div class="t">แก้ไขได้ที่ Count 3</div></div>
-                  <div class="diff-funnel-arrow">→</div>
-                  <div class="diff-funnel-step final"><div class="n" id="fnOpen">0</div><div class="t">ยังคง Diff ณ ปัจจุบัน</div></div>
-                </div>
+                <div class="diff-funnel-row" id="diffFunnelRow"></div>
               </div>
 
-              <div class="diff-donut-row">
-                <div class="diff-donut-card creg">
-                  <h4><span class="dot" style="background:var(--navy)"></span> Regular Count · อัตรา Diff ที่พบ</h4>
-                  <div class="diff-donut-body">
-                    <div class="diff-donut" id="donutReg" style="--p:0;--c:var(--navy)"><div class="val"><b id="donutRegPct">0%</b><span>Diff</span></div></div>
-                    <div class="diff-donut-legend">
-                      <div class="row"><span class="sw" style="background:var(--navy)"></span> พบ Diff <b id="donutRegDiff">0</b></div>
-                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ตรงระบบ <b id="donutRegOk">0</b></div>
-                    </div>
-                  </div>
-                  <div class="diff-donut-foot"><span>นับทั้งหมดครั้งแรก</span><b id="donutRegBase">0 รายการ</b></div>
-                </div>
-
-                <div class="diff-donut-card c2">
-                  <h4><span class="dot" style="background:#2b5fb0"></span> Count 2 · สัดส่วนที่แก้ได้</h4>
-                  <div class="diff-donut-body">
-                    <div class="diff-donut" id="donutC2" style="--p:0;--c:#2b5fb0"><div class="val"><b id="donutC2Pct">0%</b><span>แก้แล้ว</span></div></div>
-                    <div class="diff-donut-legend">
-                      <div class="row"><span class="sw" style="background:#2b5fb0"></span> แก้แล้ว <b id="donutC2Ok">0</b></div>
-                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ยังคง Diff <b id="donutC2Bad">0</b></div>
-                    </div>
-                  </div>
-                  <div class="diff-donut-foot"><span>นับซ้ำเฉพาะ Diff จาก Regular</span><b id="donutC2Base">0 รายการ</b></div>
-                </div>
-
-                <div class="diff-donut-card c3">
-                  <h4><span class="dot" style="background:var(--red)"></span> Count 3 · สัดส่วนที่แก้ได้</h4>
-                  <div class="diff-donut-body">
-                    <div class="diff-donut" id="donutC3" style="--p:0;--c:var(--red)"><div class="val"><b id="donutC3Pct">0%</b><span>แก้แล้ว</span></div></div>
-                    <div class="diff-donut-legend">
-                      <div class="row"><span class="sw" style="background:var(--red)"></span> แก้แล้ว <b id="donutC3Ok">0</b></div>
-                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ยังคง Diff <b id="donutC3Bad">0</b></div>
-                    </div>
-                  </div>
-                  <div class="diff-donut-foot"><span>นับซ้ำเฉพาะ Diff จาก Count 2</span><b id="donutC3Base">0 รายการ</b></div>
-                </div>
-
-                <div class="diff-donut-card cfinal">
-                  <h4><span class="dot" style="background:var(--ok)"></span> ผลรวมสุดท้าย (Overall Result)</h4>
-                  <div class="diff-donut-body">
-                    <div class="diff-donut" id="donutFinal" style="--p:0;--c:var(--ok)"><div class="val"><b id="donutFinalPct">0%</b><span>แก้แล้ว</span></div></div>
-                    <div class="diff-donut-legend">
-                      <div class="row"><span class="sw" style="background:var(--ok)"></span> แก้แล้ว <b id="donutFinalOk">0</b></div>
-                      <div class="row"><span class="sw" style="background:#f1ecec"></span> ยังไม่แก้ <b id="donutFinalBad">0</b></div>
-                      <div class="row" style="opacity:.65"><span class="sw" style="background:var(--navy)"></span> Diff ทั้งหมด <b id="donutFinalTotal">0</b></div>
-                    </div>
-                  </div>
-                  <div class="diff-donut-foot"><span>ความแม่นยำ Precount ตั้งต้น</span><b id="donutFinalAcc">0%</b></div>
-                </div>
-              </div>
+              <div class="diff-donut-row" id="diffDonutRow"></div>
 
               <div class="diff-filter-bar">
                 <div class="seg">
@@ -545,7 +521,7 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
                   <table class="diff-tbl">
                     <thead><tr>
                       <th>ทรัพย์สิน</th><th class="c">โซน</th><th class="c">Precount</th>
-                      <th class="c">Regular</th><th class="c">Count 2</th><th class="c">Count 3</th><th>สรุปผล</th>
+                      <th class="c">Regular</th><th class="c">Count 1</th><th class="c">Count 2</th><th class="c">Count 3</th><th>สรุปผล</th>
                     </tr></thead>
                     <tbody id="diffTbody"></tbody>
                   </table>
@@ -598,10 +574,24 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
               <div><b id="csTitle"></b><div class="muted" id="csSub"></div></div>
               <button class="btn ghost sm" onclick="backToSessions()">← กลับ</button>
             </div>
+            <div class="cs-stepper" id="csStepper"></div>
           </div>
-          <div class="card">
+          <div class="card" id="csStateCard"></div>
+          <div class="card" id="csChecklistCard" style="display:none">
+            <div class="row" style="justify-content:space-between">
+              <b id="csCkTitle">รายการที่ต้องตามนับรอบนี้</b>
+              <span class="muted" id="csCkCount"></span>
+            </div>
+            <div class="cs-prog"><i id="csCkBar" style="width:0%"></i></div>
+            <div class="row" style="margin:6px 0 8px">
+              <input id="csCkFilter" class="inp" style="flex:1" placeholder="ค้นหาในรายการ (WFDC / ชื่อ)" oninput="renderChecklist_()">
+              <label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="csCkHideGot" onchange="renderChecklist_()"> ซ่อนที่เจอแล้ว</label>
+            </div>
+            <div class="cs-check" id="csCkList"></div>
+          </div>
+          <div class="card" id="csScanArea">
             <div class="row" style="justify-content:space-between;margin-bottom:10px">
-              <b>สแกนบาร์โค้ด</b>
+              <b id="csScanTitle">สแกนบาร์โค้ด</b>
               <button id="scanToggle" class="btn primary sm" onclick="toggleScan()">▶ เปิดกล้อง</button>
             </div>
             <div id="reader"></div>
@@ -618,11 +608,7 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
               <div><b id="csExtra">0</b> <span class="muted">เกิน</span></div>
               <div><b id="csTotal">0</b> <span class="muted">ทั้งหมด</span></div>
             </div>
-            <div class="row" style="margin-top:12px">
-              <button class="btn ghost sm" onclick="showResult()">ดูผลสรุป</button>
-              <button class="btn ghost sm" onclick="doRecheck()">รอบ Recheck</button>
-              <button class="btn red sm" onclick="doClose()">ปิดรอบนับ</button>
-            </div>
+            <div class="row" style="margin-top:12px" id="csActions"></div>
           </div>
         </div>
       </section>
@@ -760,6 +746,7 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
 </div>
 
 <div id="printArea"><div class="label-sheet" id="labelSheet"></div></div>
+<div id="scanPop"><div class="box"><div class="ic" id="spIc"></div><div class="h" id="spH"></div><div class="d" id="spD"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <!-- Lightbox พรีวิวรูป -->
@@ -1054,6 +1041,8 @@ const FIRESTORE_ACTIONS = {
     const sSnap = await db.collection('sessions').doc(sessionId).get();
     if(!sSnap.exists) throw new Error('ไม่พบ session');
     const sess = sSnap.data();
+    if(sess.status==='done') throw new Error('รอบนับนี้ปิดแล้ว ไม่สามารถสแกนเพิ่มได้');
+    if(sess.status==='round_closed') throw new Error('ปิดรอบนี้ไปแล้ว กดเริ่มรอบถัดไปก่อนสแกน');
     const round = sess.round || 1;
     const sessZone = sess.zone || '';
     const sessCategory = sess.category || '';
@@ -1066,6 +1055,13 @@ const FIRESTORE_ACTIONS = {
     const wrongZone = !!(asset && sessZone && asset.zone && asset.zone !== sessZone);
     // ผิดประเภท: นับเจาะจงประเภท แต่ของชิ้นนี้ระบบบอกเป็นคนละประเภท
     const wrongCategory = !!(asset && sessCategory && asset.category && asset.category !== sessCategory);
+    // รอบนับซ้ำ (Count 1-3): ถ้าชิ้นนี้เจอแล้วในรอบก่อนหน้า → ถือว่านับแล้ว ไม่บันทึกซ้ำ
+    if(!exists.exists && round>1){
+      const prevRefs=[]; for(let r=1;r<round;r++) prevRefs.push(db.collection('sessions').doc(sessionId).collection('items').doc(wfdcId+'_r'+r).get());
+      const prev=await Promise.all(prevRefs);
+      const hit=prev.findIndex(d=>d.exists && d.data().found===true);
+      if(hit>=0) return { ok:true, duplicate:true, prevRound:hit+1, matched:!!asset, name: asset?asset.name:'', wrongZone, assetZone: asset?asset.zone:'', wrongCategory, assetCategory: asset?asset.category:'' };
+    }
     if(exists.exists) return { ok:true, duplicate:true, matched:!!asset, name: asset?asset.name:'', wrongZone, assetZone: asset?asset.zone:'', wrongCategory, assetCategory: asset?asset.category:'' };
     await itemRef.set({ wfdcId, assetId: asset?asset.assetId:'', found:true, round, countedBy:USER.empId, countedAt:new Date().toISOString(), location:'', note:'' });
     return { ok:true, matched:!!asset, name:asset?asset.name:'', category:asset?asset.category:'', zone:asset?asset.zone:'', wrongZone, assetZone: asset?asset.zone:'', wrongCategory, assetCategory: asset?asset.category:'' };
@@ -1092,14 +1088,37 @@ const FIRESTORE_ACTIONS = {
     const slim=a=>({assetId:a.assetId, wfdcId:a.wfdcId, name:a.name, category:a.category, zone:a.zone, status:a.status});
     return { ok:true, result:{ total:expected.length, found:found.length, missing:missing.length, extra:extra.length, missingItems:missing.map(slim), extraItems:extra } };
   },
-  recheckSession: async ({sessionId}) => {
+  // ── ขั้นตอนนับ 4 รอบ: Regular(1) → Count 1(2) → Count 2(3) → Count 3(4) ──
+  closeRound: async ({sessionId}) => {
     const ref = db.collection('sessions').doc(sessionId);
     const snap = await ref.get();
     if(!snap.exists) throw new Error('ไม่พบ session');
-    const round = (snap.data().round||1)+1;
-    await ref.update({ status:'recheck', round });
+    const sess = snap.data();
+    if(sess.status==='done') throw new Error('รอบนับนี้ปิดไปแล้ว');
+    if(sess.status==='round_closed') throw new Error('รอบนี้ปิดไปแล้ว รอเริ่มรอบถัดไป');
+    const round = sess.round||1;
+    const r = (await FIRESTORE_ACTIONS.countResult({sessionId})).result;
+    const diffCount = r.missing + r.extra;
+    const newStatus = (diffCount===0 || round>=4) ? 'done' : 'round_closed';
+    const upd = { status:newStatus };
+    upd['r'+round+'ClosedAt'] = new Date().toISOString();
+    upd['r'+round+'ClosedBy'] = USER.empId;
+    upd['r'+round+'Diff'] = diffCount;
+    await ref.update(upd);
+    return { ok:true, status:newStatus, diffCount, round };
+  },
+  startNextRound: async ({sessionId}) => {
+    const ref = db.collection('sessions').doc(sessionId);
+    const snap = await ref.get();
+    if(!snap.exists) throw new Error('ไม่พบ session');
+    const sess = snap.data();
+    if(sess.status!=='round_closed') throw new Error('ต้องปิดรอบปัจจุบันก่อน ถึงจะเริ่มรอบถัดไปได้');
+    const round = (sess.round||1)+1;
+    if(round>4) throw new Error('นับครบแล้ว (Regular + Count 1-3)');
+    await ref.update({ status:'counting', round });
     return { ok:true, round };
   },
+  // ปิดจบทั้งรอบนับทันที (ใช้เมื่อไม่ต้องการนับซ้ำต่อ)
   closeSession: async ({sessionId}) => {
     await db.collection('sessions').doc(sessionId).update({ status:'done' });
     return { ok:true };
@@ -1576,9 +1595,9 @@ async function loadSessions(){
     if(!ss.length){tb.innerHTML='<tr><td colspan="8" class="muted">ยังไม่มีรอบนับ</td></tr>';return;}
     ss.forEach(s=>{
       const tr=document.createElement('tr');
-      const st={counting:'warn',recheck:'move',done:'ok'}[s.Status]||'ok';
+      const st={counting:'warn',recheck:'warn',round_closed:'move',done:'ok'}[s.Status]||'ok';
       tr.innerHTML=`<td>${esc(s.SessionID)}</td><td>${esc(fmtDate(s.CreatedDate))}</td><td>${esc(s.Zone||'ทั้งคลัง')}</td><td>${esc(s.Category||'ทุกประเภท')}</td><td>${esc(s.CreatedBy)}</td>
-        <td>${esc(s.Round)}</td><td><span class="chip ${st}">${esc(s.Status)}</span></td>
+        <td>${esc(roundName_(s.Round))}</td><td><span class="chip ${st}">${esc(statusLabel_(s.Status,s.Round))}</span></td>
         <td><button class="btn ghost sm" onclick='openSession(${JSON.stringify(s.SessionID)})'>เปิด</button>${USER.role==='admin'?`<button class="btn ghost sm" style="color:var(--danger)" onclick='deleteSession(${JSON.stringify(s.SessionID)})'>ลบ</button>`:''}</td>`;
       tb.appendChild(tr);
     });
@@ -1611,17 +1630,104 @@ async function newSession(){
     openSession(d.sessionId);
   }catch(e){toast(e.message,'err');}
 }
+const ROUND_NAMES=['Regular Count','Count 1','Count 2','Count 3'];
+function roundName_(r){ return ROUND_NAMES[(parseInt(r,10)||1)-1]||('รอบ '+r); }
+function statusLabel_(st,r){
+  if(st==='done') return 'ปิดจบแล้ว';
+  if(st==='round_closed') return 'ปิด '+roundName_(r)+' · รอเริ่มรอบถัดไป';
+  return 'กำลังนับ '+roundName_(r);
+}
+function sessState_(){ // counting | round_closed | done  (status 'recheck' เดิม = counting)
+  if(!SESSION) return 'counting';
+  return SESSION.Status==='done'?'done':(SESSION.Status==='round_closed'?'round_closed':'counting');
+}
 async function openSession(sessionId){
   try{
     const d=await api('getSession',{sessionId});
-    SESSION=d.session;
+    SESSION=d.session; SESSION.Round=parseInt(SESSION.Round,10)||1;
+    window._lastResult=null; window._ckJust={};
     document.getElementById('countHome').style.display='none';
     document.getElementById('countActive').style.display='block';
     document.getElementById('csTitle').textContent='รอบนับ: '+SESSION.SessionID;
-    document.getElementById('csSub').textContent='โซน '+(SESSION.Zone||'ทั้งคลัง')+' · ประเภท '+(SESSION.Category||'ทุกประเภท')+' · รอบที่ '+SESSION.Round+' · สถานะ '+SESSION.Status;
     document.getElementById('scanLog').innerHTML='';
-    refreshResult();
+    document.getElementById('csCkFilter').value='';
+    renderSessionUI_();
+    await refreshResult();
   }catch(e){toast(e.message,'err');}
+}
+function renderSessionUI_(){
+  const st=sessState_(), r=SESSION.Round;
+  document.getElementById('csSub').textContent='โซน '+(SESSION.Zone||'ทั้งคลัง')+' · ประเภท '+(SESSION.Category||'ทุกประเภท')+' · '+statusLabel_(SESSION.Status,r);
+  renderStepper_(); renderRoundBody_();
+  const scanOn = st==='counting';
+  document.getElementById('csScanArea').style.display = scanOn?'block':'none';
+  if(!scanOn) stopScan();
+  document.getElementById('csScanTitle').textContent='สแกน · '+roundName_(r)+(r>1?' (เฉพาะรายการที่ยังไม่เจอ)':'');
+  document.getElementById('csChecklistCard').style.display = (scanOn && r>1) ? 'block':'none';
+  let h='<button class="btn ghost sm" onclick="showResult()">ดูผลสรุป</button>';
+  if(st!=='done' && USER.role==='admin') h+='<button class="btn ghost sm" style="color:var(--danger)" onclick="forceCloseSession()">ปิดจบทั้งรอบนับทันที</button>';
+  document.getElementById('csActions').innerHTML=h;
+}
+function renderStepper_(){
+  const st=sessState_(), cur=SESSION.Round, el=document.getElementById('csStepper');
+  el.innerHTML=ROUND_NAMES.map((nm,i)=>{
+    const n=i+1; let cls='locked', sub='🔒 รอปิดรอบก่อนหน้า', click='';
+    if(n<cur || (n===cur && st!=='counting')){ cls='done'; sub='✓ ปิดรอบแล้ว'; }
+    else if(n===cur){ cls='active'; sub='กำลังนับ'; }
+    else if(n===cur+1 && st==='round_closed'){ cls='next'; sub='▶ กดเพื่อเริ่มรอบนี้'; click='onclick="startNextRound()"'; }
+    else if(st==='done'){ cls='skipped'; sub='ไม่ต้องนับ'; }
+    return `<button type="button" class="cs-step ${cls}" ${click} ${cls==='next'?'':'disabled'}><div class="k">${n===1?'Stage 1':'Recount '+(n-1)}</div><div class="t">${nm}</div><div class="s">${sub}</div></button>`;
+  }).join('');
+}
+function renderRoundBody_(){
+  if(!SESSION) return;
+  const st=sessState_(), r=SESSION.Round, res=window._lastResult, card=document.getElementById('csStateCard');
+  const diff = res ? (res.missing+res.extra) : null;
+  const diffTxt = res ? `ขาด <b>${res.missing}</b> · เกิน <b>${res.extra}</b>` : '…';
+  if(st==='counting'){
+    const scope = r===1 ? 'นับของทั้งหมดตามโซน/ประเภทที่เลือก' : 'ตามนับเฉพาะรายการที่ยังไม่เจอจากรอบก่อน (ดู checklist ด้านล่าง)';
+    const nextTxt = r>=4 ? 'นี่คือรอบสุดท้าย — ปิดแล้วจะจบรอบนับ ส่วนที่ยังขาดจะค้างเป็นผลสรุป' : ('ปิดแล้วถ้ายังมี diff จะปลดล็อก '+roundName_(r+1));
+    card.innerHTML=`<div class="cs-banner info"><div class="ic">📋</div><div style="flex:1">
+      <b>กำลังนับ: ${roundName_(r)}</b><div class="muted">${scope}</div>
+      <div style="margin-top:6px">Diff ตอนนี้: ${diffTxt}</div>
+      <div class="muted" style="margin-top:4px">${nextTxt}</div>
+      <div class="row" style="margin-top:10px"><button class="btn red sm" onclick="closeRound()">■ ปิด ${roundName_(r)}</button></div>
+    </div></div>`;
+  }else if(st==='round_closed'){
+    card.innerHTML=`<div class="cs-banner warnb"><div class="ic">⏸</div><div style="flex:1">
+      <b>ปิด ${roundName_(r)} แล้ว</b><div style="margin-top:4px">ยังมี diff: ${diffTxt}</div>
+      <div class="muted" style="margin-top:4px">${roundName_(r+1)} จะตามนับเฉพาะรายการที่ยังขาดเท่านั้น</div>
+      <div class="row" style="margin-top:10px"><button class="btn primary sm" onclick="startNextRound()">▶ เริ่ม ${roundName_(r+1)}</button>
+      <button class="btn ghost sm" onclick="showResult()">ดูรายการ diff</button></div>
+    </div></div>`;
+  }else{
+    const clean = res && diff===0;
+    card.innerHTML=`<div class="cs-banner ${clean?'okb':'warnb'}"><div class="ic">${clean?'✅':'🏁'}</div><div style="flex:1">
+      <b>${clean?'นับครบ ไม่มี diff — ปิดจบรอบนับแล้ว':'ปิดจบรอบนับแล้ว (สิ้นสุดที่ '+roundName_(r)+')'}</b>
+      <div style="margin-top:4px">${clean?'ของตรงกับระบบทั้งหมด':'ผลสรุปค้าง: '+diffTxt+' — ส่งต่อให้ตรวจสอบ/ปรับปรุงทะเบียน'}</div>
+      <div class="muted" style="margin-top:4px">รอบนับนี้ล็อกแล้ว ไม่สามารถสแกนเพิ่มได้</div>
+    </div></div>`;
+  }
+}
+function renderChecklist_(){
+  const res=window._lastResult; if(!res||!SESSION||SESSION.Round<2) return;
+  const base=window._ckBase||[];
+  const stillMissing={}; res.missingItems.forEach(m=>stillMissing[m.wfdcId]=true);
+  const q=(document.getElementById('csCkFilter').value||'').trim().toLowerCase();
+  const hide=document.getElementById('csCkHideGot').checked;
+  const got=base.filter(m=>!stillMissing[m.wfdcId]).length;
+  document.getElementById('csCkTitle').textContent='Checklist '+roundName_(SESSION.Round)+' — รายการที่ต้องตามหา';
+  document.getElementById('csCkCount').textContent='เจอแล้ว '+got+' / '+base.length;
+  document.getElementById('csCkBar').style.width=(base.length?Math.round(got*100/base.length):0)+'%';
+  const rows=base.filter(m=>!q || (m.wfdcId||'').toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q))
+    .filter(m=>!(hide && !stillMissing[m.wfdcId]))
+    .sort((a,b)=>(stillMissing[b.wfdcId]?1:0)-(stillMissing[a.wfdcId]?1:0));
+  const extraNote = res.extra ? `<div class="ci"><span class="chip warn">เกิน ${res.extra}</span><span class="muted">ของที่สแกนเจอแต่ไม่อยู่ในทะเบียน/ขอบเขต — ตรวจสอบด้วยมือ</span></div>` : '';
+  document.getElementById('csCkList').innerHTML = (rows.length? rows.map(m=>{
+    const g=!stillMissing[m.wfdcId]; const j=window._ckJust&&window._ckJust[m.wfdcId];
+    return `<div class="ci ${g?'got':''} ${j?'just':''}"><span class="bx">${g?'✓':''}</span><b>${esc(m.wfdcId)}</b><span class="nm">${esc(m.name||'')}</span><span class="muted" style="margin-left:auto">${esc(m.zone||'')}</span></div>`;
+  }).join('') : '<div class="ci muted">ไม่มีรายการ</div>') + extraNote;
+  window._ckJust={};
 }
 function backToSessions(){
   stopScan();
@@ -1650,33 +1756,51 @@ async function onScan(text){
   await submitScan(text);
 }
 function manualScanGo(){ const v=val('manualScan'); if(!v)return; submitScan(v); document.getElementById('manualScan').value=''; }
+let _spTimer=null;
+function scanPopup_(kind,icon,head,detail){
+  const el=document.getElementById('scanPop');
+  document.getElementById('spIc').textContent=icon;
+  document.getElementById('spH').textContent=head;
+  document.getElementById('spD').textContent=detail||'';
+  el.className='';void el.offsetWidth; el.className='show '+kind;
+  clearTimeout(_spTimer); _spTimer=setTimeout(()=>el.className='',kind==='ok'?1300:2200);
+}
 async function submitScan(wfdcId){
+  if(!SESSION) return;
+  if(sessState_()!=='counting'){ scanPopup_('err','⛔','สแกนไม่ได้','รอบนี้ปิดแล้ว'); return; }
   try{
     const d=await api('scanCount',{sessionId:SESSION.SessionID, wfdcId});
     const log=document.getElementById('scanLog');
-    let dot='g',msg=d.name||wfdcId;
-    if(d.duplicate){dot='y';msg=wfdcId+' (สแกนซ้ำ)';}
-    else if(!d.matched){dot='r';msg=wfdcId+' — ไม่พบในระบบ (เกิน)';}
-    else if(d.wrongZone||d.wrongCategory){dot='y';}
-    let tag='';
-    if(d.duplicate) tag=' <span class="chip warn">ซ้ำ</span>';
-    else if(!d.matched) tag=' <span class="chip danger">เกิน</span>';
-    else{
-      if(d.wrongZone) tag+=' <span class="chip warn">ผิดโซน: อยู่ '+esc(d.assetZone)+'</span>';
-      if(d.wrongCategory) tag+=' <span class="chip warn">ผิดประเภท: เป็น '+esc(d.assetCategory)+'</span>';
+    const inScope = SESSION.Round<2 || !window._ckBase || window._ckBase.some(m=>m.wfdcId===wfdcId);
+    let dot='g', tag='';
+    if(d.duplicate){
+      dot='y'; tag=' <span class="chip warn">ซ้ำ'+(d.prevRound?' · นับแล้วใน '+esc(roundName_(d.prevRound)):'')+'</span>';
+      scanPopup_('dup','🔁','สแกนซ้ำ — ไอเทมนี้นับแล้ว', wfdcId+(d.name?' · '+d.name:'')+(d.prevRound?' (นับแล้วใน '+roundName_(d.prevRound)+')':''));
+      if(navigator.vibrate)navigator.vibrate([40,60,40,60,40]);
+    }else if(!d.matched){
+      dot='r'; tag=' <span class="chip danger">เกิน · ไม่มีในระบบ</span>';
+      scanPopup_('err','❗','ไม่พบในระบบ (เกิน)', wfdcId+' — บันทึกเป็นรายการเกินแล้ว');
+      if(navigator.vibrate)navigator.vibrate([120,60,120]);
+    }else if(d.wrongZone||d.wrongCategory){
+      dot='y';
+      const bits=[];
+      if(d.wrongZone){ tag+=' <span class="chip warn">ผิดโซน: อยู่ '+esc(d.assetZone)+'</span>'; bits.push('ระบบบอกอยู่โซน '+d.assetZone); }
+      if(d.wrongCategory){ tag+=' <span class="chip warn">ผิดประเภท: เป็น '+esc(d.assetCategory)+'</span>'; bits.push('ระบบบอกเป็น '+d.assetCategory); }
+      scanPopup_('warn','⚠️','สแกนเข้าแล้ว — แต่ผิดโซน/ประเภท', wfdcId+' · '+bits.join(' · '));
+      if(navigator.vibrate)navigator.vibrate([60,40,60]);
+    }else{
+      if(!inScope) tag=' <span class="chip move">นอก checklist</span>';
+      scanPopup_('ok','✅','สแกนเข้าแล้ว', wfdcId+(d.name?' · '+d.name:''));
+      if(navigator.vibrate)navigator.vibrate(60);
     }
     const it=document.createElement('div'); it.className='scan-item';
     it.innerHTML=`<span class="dot ${dot}"></span><b>${esc(wfdcId)}</b> <span class="muted">${esc(d.name||'')}</span>${tag}`;
     log.prepend(it);
-    if(!d.duplicate && (d.wrongZone||d.wrongCategory)){
-      const bits=[]; if(d.wrongZone) bits.push('ระบบบอกอยู่โซน '+d.assetZone+' แต่กำลังนับโซน '+(SESSION.Zone||'ทั้งคลัง'));
-      if(d.wrongCategory) bits.push('ระบบบอกเป็นประเภท '+d.assetCategory+' แต่กำลังนับประเภท '+(SESSION.Category||'ทุกประเภท'));
-      toast('⚠ '+wfdcId+' — '+bits.join(' · '),'err');
-    }
-    if(!d.duplicate){ if(navigator.vibrate)navigator.vibrate((d.wrongZone||d.wrongCategory)?[60,40,60]:60); refreshResult(); }
-  }catch(e){toast(e.message,'err');}
+    if(!d.duplicate){ window._ckJust=window._ckJust||{}; window._ckJust[wfdcId]=true; refreshResult(); }
+  }catch(e){ scanPopup_('err','⛔','สแกนไม่สำเร็จ',e.message); }
 }
 async function refreshResult(){
+  if(!SESSION) return;
   try{
     const r=(await api('countResult',{sessionId:SESSION.SessionID})).result;
     document.getElementById('csFound').textContent=r.found;
@@ -1684,6 +1808,23 @@ async function refreshResult(){
     document.getElementById('csExtra').textContent=r.extra;
     document.getElementById('csTotal').textContent=r.total;
     window._lastResult=r;
+    // ขอบเขต checklist ของรอบนี้ = ของที่ยังขาดตอนเปิดรอบนี้ครั้งแรก (แล้วติ๊กออกเมื่อสแกนเจอ)
+    const key=SESSION.SessionID+'_r'+SESSION.Round;
+    if(SESSION.Round>1 && window._ckKey!==key){
+      window._ckKey=key;
+      let base=r.missingItems.slice();
+      try{ // ถ้าเปิดรอบนี้ซ้ำ (รีเฟรชหน้า) รวมของที่เจอในรอบนี้แล้วกลับเข้า checklist ด้วย
+        const snap=await db.collection('sessions').doc(SESSION.SessionID).collection('items').where('round','==',SESSION.Round).get();
+        const have={}; base.forEach(m=>have[m.wfdcId]=true);
+        const ids=snap.docs.map(d=>d.data().wfdcId).filter(id=>id && !have[id]);
+        if(ids.length){
+          const as=await Promise.all(ids.map(id=>db.collection('assets').doc(id).get()));
+          as.forEach((a,i)=>{ if(a.exists){ const x=a.data(); if((!SESSION.Zone||x.zone===SESSION.Zone)&&(!SESSION.Category||x.category===SESSION.Category)) base.push({wfdcId:ids[i],name:x.name,zone:x.zone,category:x.category}); } });
+        }
+      }catch(e){}
+      window._ckBase=base;
+    }
+    renderRoundBody_(); renderChecklist_();
   }catch(e){}
 }
 function showResult(){
@@ -1698,15 +1839,35 @@ function showResult(){
     r.extraItems.map(m=>`<tr><td>${esc(m.wfdcId)}</td></tr>`).join('')+'</tbody></table></div>'; }
   document.getElementById('resultBody').innerHTML=h; open_('resultModal');
 }
-async function doRecheck(){
-  if(!confirm('เริ่มรอบ Recheck? ระบบจะขึ้นรอบถัดไปเพื่อตามนับรายการที่ขาด'))return;
-  try{ const d=await api('recheckSession',{sessionId:SESSION.SessionID});
-    toast('เข้าสู่รอบ Recheck รอบ '+d.round,'ok'); openSession(SESSION.SessionID); }
-  catch(e){toast(e.message,'err');}
+async function closeRound(){
+  const r=SESSION.Round, res=window._lastResult;
+  const diff=res?(res.missing+res.extra):null;
+  let msg='ปิด '+roundName_(r)+'?\nDiff ตอนนี้: ขาด '+(res?res.missing:'?')+' · เกิน '+(res?res.extra:'?')+'\n\n';
+  if(diff===0) msg+='ไม่มี diff → ระบบจะปิดจบรอบนับให้เลย';
+  else if(r>=4) msg+='นี่คือรอบสุดท้าย → ปิดจบรอบนับ ส่วนที่ขาด/เกินจะค้างเป็นผลสรุป';
+  else msg+='ยังมี diff → จะปลดล็อก '+roundName_(r+1)+' ให้ตามนับเฉพาะรายการที่ค้าง';
+  msg+='\n\nปิดแล้วจะสแกนเพิ่มในรอบนี้ไม่ได้';
+  if(!confirm(msg))return;
+  try{
+    const d=await api('closeRound',{sessionId:SESSION.SessionID});
+    if(d.status==='done') toast(d.diffCount===0?'✅ นับครบ ไม่มี diff — ปิดจบรอบนับแล้ว':'🏁 ปิดจบรอบนับแล้ว (diff ค้าง '+d.diffCount+')','ok');
+    else toast('ปิด '+roundName_(d.round)+' แล้ว · ปลดล็อก '+roundName_(d.round+1),'ok');
+    openSession(SESSION.SessionID);
+  }catch(e){toast(e.message,'err');}
 }
-async function doClose(){
-  if(!confirm('ปิดรอบนับนี้? จะไม่สามารถสแกนเพิ่มได้'))return;
-  try{ await api('closeSession',{sessionId:SESSION.SessionID}); toast('ปิดรอบนับแล้ว','ok'); backToSessions(); loadSessions(); }
+async function startNextRound(){
+  const nx=SESSION.Round+1;
+  if(!confirm('เริ่ม '+roundName_(nx)+'?\nจะตามนับเฉพาะรายการที่ยังไม่เจอจากรอบก่อน'))return;
+  try{
+    const d=await api('startNextRound',{sessionId:SESSION.SessionID});
+    toast('เริ่ม '+roundName_(d.round)+' แล้ว','ok');
+    openSession(SESSION.SessionID);
+  }catch(e){toast(e.message,'err');}
+}
+async function forceCloseSession(){
+  if(USER.role!=='admin'){ toast('เฉพาะผู้ดูแลระบบเท่านั้น','err'); return; }
+  if(!confirm('ปิดจบทั้งรอบนับทันที โดยไม่นับรอบที่เหลือ?\ndiff ที่ค้างจะเป็นผลสรุปสุดท้าย'))return;
+  try{ await api('closeSession',{sessionId:SESSION.SessionID}); toast('ปิดจบรอบนับแล้ว','ok'); openSession(SESSION.SessionID); }
   catch(e){toast(e.message,'err');}
 }
 
@@ -1802,31 +1963,30 @@ async function cdRenderChart(sid){
 // ยกเลิก listener เมื่อออกจากหน้า (กัน memory leak / อ่าน quota เปล่า)
 function cdCleanup(){ if(cdUnsub){ cdUnsub(); cdUnsub=null; } }
 
-/* ============ DIFF REPORT (Precount → Regular → Count 2 → Count 3) ============
-   โมเดลข้อมูลเดิม: "นับซ้ำ" (recheckSession) เพิ่ม round ในรอบนับเดียวกัน (session เดียว)
-   ดังนั้น Regular=round 1, Count2=round 2, Count3=round 3 ของ session เดียวกัน
-   items ของแต่ละ round จะถูกเก็บแยกเป็น doc คนละใบ (wfdcId+'_r'+round) จึงเทียบ round ต่อ round ได้ตรง ๆ */
+/* ============ DIFF REPORT (Regular → Count 1 → Count 2 → Count 3) ============
+   1 session มีได้ 4 round: Regular=round 1, Count 1=round 2, Count 2=round 3, Count 3=round 4
+   items ของแต่ละ round เก็บแยก doc (wfdcId+'_r'+round) จึงเทียบ round ต่อ round ได้ตรง ๆ */
 let diffData=null, diffFilter='all';
+const DIFF_MAX_ROUND=4;
 
-// สถานะรายรอบของ 1 แถว: 'na' ยังไม่เกี่ยวข้อง(ก่อนพบdiff/แก้แล้ว) | 'pending' ยังไม่ถึงรอบนี้ | 'miss'/'extra' ยังเป็น diff | 'ok' แก้แล้ว
+// สถานะรายรอบของ 1 แถว: 'na' ไม่เกี่ยว(ก่อนพบdiff/แก้แล้ว) | 'pending' ยังไม่ถึงรอบนี้ | 'miss'/'extra' ยังเป็น diff | 'ok' แก้แล้ว
 function diffRoundStatus_(type, firstBad, roundsDone, hasFn){
-  const st=[null,null,null]; let resolved=false, resolvedAt=null;
-  for(let r=1;r<=3;r++){
-    if(r<firstBad){ st[r-1]='na'; continue; }
-    if(resolved){ st[r-1]='na'; continue; }
-    if(r===firstBad){ st[r-1]= type==='missing'?'miss':'extra'; continue; }
-    if(roundsDone<r){ st[r-1]='pending'; continue; }
+  const st=[]; let resolved=false, resolvedAt=null, resolvedRound=null;
+  for(let r=1;r<=DIFF_MAX_ROUND;r++){
+    if(r<firstBad || resolved){ st.push('na'); continue; }
+    if(r===firstBad){ st.push(type==='missing'?'miss':'extra'); continue; }
+    if(roundsDone<r){ st.push('pending'); continue; }
     const found = hasFn(r);
     const good = type==='missing' ? found : !found; // ขาด: แก้แล้วถ้านับเจอ / เกิน: แก้แล้วถ้าไม่โผล่ซ้ำ
-    if(good){ st[r-1]='ok'; resolved=true; resolvedAt='Count '+r; }
-    else{ st[r-1]= type==='missing'?'miss':'extra'; }
+    if(good){ st.push('ok'); resolved=true; resolvedRound=r; resolvedAt=roundName_(r); }
+    else st.push(type==='missing'?'miss':'extra');
   }
-  return {st, resolved, resolvedAt};
+  return {st, resolved, resolvedAt, resolvedRound};
 }
 
 async function cdBuildDiffData_(sid){
   const sess = cdSessions.find(s=>s.SessionID===sid);
-  const roundsDone = sess ? (sess.Round||1) : 1;
+  const roundsDone = sess ? (parseInt(sess.Round,10)||1) : 1;
   const sessZone = sess ? (sess.Zone||'') : '';
   const sessCategory = sess ? (sess.Category||'') : '';
   const [assetsSnap, itemsSnap] = await Promise.all([
@@ -1839,121 +1999,89 @@ async function cdBuildDiffData_(sid){
     .filter(a=> sessCategory ? (a.category===sessCategory) : true);
   const expectedMap={}; expected.forEach(a=>expectedMap[a.wfdcId]=a);
 
-  const scanSet={1:new Set(),2:new Set(),3:new Set()};
-  itemsSnap.docs.forEach(d=>{ const it=d.data(); if(it.found===true && it.round>=1 && it.round<=3) scanSet[it.round].add(it.wfdcId); });
+  const scanSet={}; for(let r=1;r<=DIFF_MAX_ROUND;r++) scanSet[r]=new Set();
+  itemsSnap.docs.forEach(d=>{ const it=d.data(); if(it.found===true && it.round>=1 && it.round<=DIFF_MAX_ROUND) scanSet[it.round].add(it.wfdcId); });
 
   // ขาด: ของในระบบที่ไม่ถูกนับเจอในรอบ Regular (round 1)
   const missingRows = expected.filter(a=>!scanSet[1].has(a.wfdcId)).map(a=>{
-    const {st,resolved,resolvedAt}=diffRoundStatus_('missing',1,roundsDone,r=>scanSet[r].has(a.wfdcId));
-    return { ...a, type:'missing', r:st, resolved, resolvedAt };
+    const x=diffRoundStatus_('missing',1,roundsDone,r=>scanSet[r].has(a.wfdcId));
+    return { ...a, type:'missing', r:x.st, resolved:x.resolved, resolvedAt:x.resolvedAt, resolvedRound:x.resolvedRound, firstBad:1 };
   });
-
-  // เกิน: สแกนเจอแต่ไม่มีในระบบ — จับตั้งแต่รอบแรกที่เจอ (ปกติคือรอบ 1)
+  // เกิน: สแกนเจอแต่ไม่อยู่ในขอบเขต — จับตั้งแต่รอบแรกที่เจอ
   const extraFirst={};
-  [1,2,3].forEach(r=>{ if(roundsDone>=r) scanSet[r].forEach(w=>{ if(!expectedMap[w] && !(w in extraFirst)) extraFirst[w]=r; }); });
+  for(let r=1;r<=DIFF_MAX_ROUND;r++){ if(roundsDone>=r) scanSet[r].forEach(w=>{ if(!expectedMap[w] && !(w in extraFirst)) extraFirst[w]=r; }); }
   const extraRows = Object.keys(extraFirst).map(w=>{
     const firstR=extraFirst[w];
-    const {st,resolved,resolvedAt}=diffRoundStatus_('extra',firstR,roundsDone,r=>scanSet[r].has(w));
-    return { wfdcId:w, name:'(ไม่มีในระบบ)', category:'-', zone:'-', makroTag:'-', assetId:'', type:'extra', r:st, resolved, resolvedAt };
+    const x=diffRoundStatus_('extra',firstR,roundsDone,r=>scanSet[r].has(w));
+    return { wfdcId:w, name:'(ไม่มีในระบบ/นอกขอบเขต)', category:'-', zone:'-', makroTag:'-', assetId:'', type:'extra', r:x.st, resolved:x.resolved, resolvedAt:x.resolvedAt, resolvedRound:x.resolvedRound, firstBad:firstR };
   });
 
   const all = missingRows.concat(extraRows).sort((a,b)=> a.wfdcId<b.wfdcId?-1:1);
-  const diffAfterRegular = all.filter(x=>x.r[0]==='miss'||x.r[0]==='extra').length;
-  const resolvedAtC2 = all.filter(x=>x.resolvedAt==='Count 2').length;
-  const resolvedAtC3 = all.filter(x=>x.resolvedAt==='Count 3').length;
+  const diffAfterRegular = all.filter(x=>x.firstBad===1).length;
+  const resolvedAt={}, base={};
+  for(let r=2;r<=DIFF_MAX_ROUND;r++){
+    resolvedAt[r]=all.filter(x=>x.resolvedRound===r).length;
+    // ฐานของรอบ r = diff ที่เกิดก่อนรอบ r และยังไม่ถูกแก้ก่อนรอบ r
+    base[r]=all.filter(x=>x.firstBad<r && !(x.resolvedRound && x.resolvedRound<r)).length;
+  }
   const stillOpen = all.filter(x=>!x.resolved).length;
-  const baseC2 = diffAfterRegular; // ฐานของ Count2 = diff ทั้งหมดที่พบตอน Regular
-  const baseC3 = all.filter(x=> (x.r[0]==='miss'||x.r[0]==='extra') && !(x.resolvedAt==='Count 2')).length; // ยังไม่แก้หลัง Count2
-  return { session:sess, roundsDone, expectedTotal:expected.length, all,
-    diffAfterRegular, resolvedAtC2, resolvedAtC3, stillOpen, baseC2, baseC3 };
+  return { session:sess, roundsDone, expectedTotal:expected.length, all, diffAfterRegular, resolvedAt, base, stillOpen };
 }
 
 function diffPct_(n,t){ return t? +( (n/t*100).toFixed(1) ) : 0; }
 
+const DIFF_COLORS={1:'var(--navy)',2:'#2b5fb0',3:'#7a4fc0',4:'var(--red)'};
 async function cdLoadDiff(sid){
   const noR=document.getElementById('diffNoRounds'), body=document.getElementById('diffContent');
-  try{
-    diffData = await cdBuildDiffData_(sid);
-  }catch(e){ toast(e.message,'err'); return; }
+  try{ diffData = await cdBuildDiffData_(sid); }catch(e){ toast(e.message,'err'); return; }
   const d=diffData;
-  if(d.diffAfterRegular===0 && d.roundsDone<2){
-    // ไม่มี diff เลย และยังไม่มีการนับซ้ำ — ยังไม่มีอะไรให้รายงาน
-    noR.style.display='block'; body.style.display='none'; return;
-  }
+  if(d.diffAfterRegular===0 && d.roundsDone<2 && !d.all.length){ noR.style.display='block'; body.style.display='none'; return; }
   noR.style.display='none'; body.style.display='block';
 
-  // การ์ดสรุปรายรอบ
-  document.getElementById('diffR1Val').textContent = d.expectedTotal+' รายการ';
-  document.getElementById('diffR1Total').textContent = d.expectedTotal;
-  document.getElementById('diffR1Diff').textContent = d.diffAfterRegular;
-
-  const c2=document.getElementById('diffRoundCard2'), c3=document.getElementById('diffRoundCard3');
-  if(d.roundsDone>=2){
-    c2.classList.remove('pending');
-    document.getElementById('diffR2Val').textContent = d.baseC2+' รายการ';
-    document.getElementById('diffR2Total').textContent = d.baseC2;
-    document.getElementById('diffR2Diff').textContent = d.baseC2-d.resolvedAtC2;
-  }else{
-    c2.classList.add('pending');
-    document.getElementById('diffR2Val').textContent = 'ยังไม่เริ่มนับซ้ำ';
-    document.getElementById('diffR2Total').textContent='0'; document.getElementById('diffR2Diff').textContent='0';
+  // การ์ดรายรอบ
+  const circ=['①','②','③','④'];
+  let cards=`<div class="diff-round-card r1"><div class="lbl">① Regular Count</div><div class="val">${d.expectedTotal} รายการ</div>
+    <div class="meta"><span>นับทั้งหมด <b>${d.expectedTotal}</b></span><span>พบ Diff <b style="color:var(--danger)">${d.diffAfterRegular}</b></span></div></div>`;
+  for(let r=2;r<=DIFF_MAX_ROUND;r++){
+    const on=d.roundsDone>=r;
+    cards+=`<div class="diff-round-card r${r} ${on?'':'pending'}"><div class="lbl">${circ[r-1]} ${roundName_(r)} (เฉพาะ Diff)</div>
+      <div class="val">${on? d.base[r]+' รายการ' : '🔒 ยังไม่เริ่ม'}</div>
+      <div class="meta"><span>ตามนับ <b>${on?d.base[r]:0}</b></span><span>ยังคง Diff <b style="color:var(--warn)">${on?(d.base[r]-d.resolvedAt[r]):0}</b></span></div></div>`;
   }
-  if(d.roundsDone>=3){
-    c3.classList.remove('pending');
-    document.getElementById('diffR3Val').textContent = d.baseC3+' รายการ';
-    document.getElementById('diffR3Total').textContent = d.baseC3;
-    document.getElementById('diffR3Diff').textContent = d.baseC3-d.resolvedAtC3;
-  }else{
-    c3.classList.add('pending');
-    document.getElementById('diffR3Val').textContent = 'ยังไม่เริ่มนับซ้ำ';
-    document.getElementById('diffR3Total').textContent='0'; document.getElementById('diffR3Diff').textContent='0';
-  }
+  document.getElementById('diffRoundPicker').innerHTML=cards;
 
   // Funnel
-  document.getElementById('fnRegular').textContent = d.diffAfterRegular;
-  document.getElementById('fnCount2').innerHTML = d.resolvedAtC2+' <small>แก้แล้ว</small>';
-  document.getElementById('fnCount3').innerHTML = d.resolvedAtC3+' <small>แก้แล้ว</small>';
-  document.getElementById('fnOpen').textContent = d.stillOpen;
+  let fn=`<div class="diff-funnel-step"><div class="n">${d.diffAfterRegular}</div><div class="t">Diff หลัง Regular Count</div></div>`;
+  for(let r=2;r<=DIFF_MAX_ROUND;r++) fn+=`<div class="diff-funnel-arrow">→</div><div class="diff-funnel-step"><div class="n">${d.resolvedAt[r]} <small>แก้แล้ว</small></div><div class="t">แก้ไขได้ที่ ${roundName_(r)}</div></div>`;
+  fn+=`<div class="diff-funnel-arrow">→</div><div class="diff-funnel-step final"><div class="n">${d.stillOpen}</div><div class="t">ยังคง Diff ณ ปัจจุบัน</div></div>`;
+  document.getElementById('diffFunnelRow').innerHTML=fn;
 
-  // Donut: Regular (อัตรา diff จากยอดนับทั้งหมด)
-  const regPct=diffPct_(d.diffAfterRegular, d.expectedTotal);
-  document.getElementById('donutReg').style.setProperty('--p', regPct);
-  document.getElementById('donutRegPct').textContent = regPct+'%';
-  document.getElementById('donutRegDiff').textContent = d.diffAfterRegular;
-  document.getElementById('donutRegOk').textContent = d.expectedTotal-d.diffAfterRegular;
-  document.getElementById('donutRegBase').textContent = d.expectedTotal+' รายการ';
-
-  // Donut: Count2
-  const c2Pct=diffPct_(d.resolvedAtC2, d.baseC2);
-  document.getElementById('donutC2').style.setProperty('--p', c2Pct);
-  document.getElementById('donutC2Pct').textContent = c2Pct+'%';
-  document.getElementById('donutC2Ok').textContent = d.resolvedAtC2;
-  document.getElementById('donutC2Bad').textContent = d.baseC2-d.resolvedAtC2;
-  document.getElementById('donutC2Base').textContent = d.baseC2+' รายการ';
-
-  // Donut: Count3
-  const c3Pct=diffPct_(d.resolvedAtC3, d.baseC3);
-  document.getElementById('donutC3').style.setProperty('--p', c3Pct);
-  document.getElementById('donutC3Pct').textContent = c3Pct+'%';
-  document.getElementById('donutC3Ok').textContent = d.resolvedAtC3;
-  document.getElementById('donutC3Bad').textContent = d.baseC3-d.resolvedAtC3;
-  document.getElementById('donutC3Base').textContent = d.baseC3+' รายการ';
-
-  // Donut: ผลรวมสุดท้าย
-  const finalResolved = d.diffAfterRegular-d.stillOpen;
-  const finalPct=diffPct_(finalResolved, d.diffAfterRegular);
-  document.getElementById('donutFinal').style.setProperty('--p', finalPct);
-  document.getElementById('donutFinalPct').textContent = finalPct+'%';
-  document.getElementById('donutFinalOk').textContent = finalResolved;
-  document.getElementById('donutFinalBad').textContent = d.stillOpen;
-  document.getElementById('donutFinalTotal').textContent = d.diffAfterRegular;
-  document.getElementById('donutFinalAcc').textContent = diffPct_(d.expectedTotal-d.diffAfterRegular, d.expectedTotal)+'%';
+  // Donuts
+  const donut=(cls,color,title,pct,lblIn,legend,footL,footR)=>`<div class="diff-donut-card ${cls}">
+    <h4><span class="dot" style="background:${color}"></span> ${title}</h4>
+    <div class="diff-donut-body"><div class="diff-donut" style="--p:${pct};--c:${color}"><div class="val"><b>${pct}%</b><span>${lblIn}</span></div></div>
+      <div class="diff-donut-legend">${legend}</div></div>
+    <div class="diff-donut-foot"><span>${footL}</span><b>${footR}</b></div></div>`;
+  const lg=(c,t,v,op)=>`<div class="row"${op?' style="opacity:.65"':''}><span class="sw" style="background:${c}"></span> ${t} <b>${v}</b></div>`;
+  const regPct=diffPct_(d.diffAfterRegular,d.expectedTotal);
+  let dn=donut('creg',DIFF_COLORS[1],'Regular Count · อัตรา Diff ที่พบ',regPct,'Diff',
+    lg(DIFF_COLORS[1],'พบ Diff',d.diffAfterRegular)+lg('#f1ecec','ตรงระบบ',d.expectedTotal-d.diffAfterRegular),'นับทั้งหมดครั้งแรก',d.expectedTotal+' รายการ');
+  for(let r=2;r<=DIFF_MAX_ROUND;r++){
+    const pct=diffPct_(d.resolvedAt[r],d.base[r]);
+    dn+=donut('c'+r,DIFF_COLORS[r],roundName_(r)+' · สัดส่วนที่แก้ได้',d.roundsDone>=r?pct:0,'แก้แล้ว',
+      lg(DIFF_COLORS[r],'แก้แล้ว',d.resolvedAt[r])+lg('#f1ecec','ยังคง Diff',d.base[r]-d.resolvedAt[r]),
+      'ตามนับเฉพาะ Diff จาก '+roundName_(r-1), d.roundsDone>=r? d.base[r]+' รายการ':'ยังไม่เริ่ม');
+  }
+  const finalResolved=d.all.length-d.stillOpen, finalPct=diffPct_(finalResolved,d.all.length);
+  dn+=donut('cfinal','var(--ok)','ผลรวมสุดท้าย (Overall Result)',finalPct,'แก้แล้ว',
+    lg('var(--ok)','แก้แล้ว',finalResolved)+lg('#f1ecec','ยังไม่แก้',d.stillOpen)+lg('var(--navy)','Diff ทั้งหมด',d.all.length,true),
+    'ความแม่นยำ Regular ตั้งต้น', diffPct_(d.expectedTotal-d.diffAfterRegular,d.expectedTotal)+'%');
+  document.getElementById('diffDonutRow').innerHTML=dn;
 
   // ตัวกรองโซน
   const zoneSel=document.getElementById('diffZone');
   const zones=[...new Set(d.all.map(x=>x.zone).filter(z=>z && z!=='-'))].sort();
   zoneSel.innerHTML='<option value="">ทุกโซน</option>'+zones.map(z=>`<option value="${esc(z)}">${esc(z)}</option>`).join('');
-
   diffRenderTable();
 }
 
@@ -1988,7 +2116,7 @@ function diffRenderTable(){
     const precount = a.type==='extra' ? diffBadge_('na') : diffBadge_('ok');
     const summary = a.resolved
       ? `<span class="diff-summary-tag resolved">แก้แล้ว <span class="r">${esc(a.resolvedAt)}</span></span>`
-      : `<span class="diff-summary-tag open">ยังไม่แก้ <span class="r">${diffData.roundsDone>=3?'3 รอบ':'รอนับต่อ'}</span></span>`;
+      : `<span class="diff-summary-tag open">ยังไม่แก้ <span class="r">${diffData.roundsDone>=4?'ครบ Count 3':'รอนับต่อ'}</span></span>`;
     return `<tr>
       <td><span class="diff-wfdc">${esc(a.wfdcId)}</span> ${a.makroTag&&a.makroTag!=='-'?`<span class="diff-makro">· ${esc(a.makroTag)}</span>`:''}<br><span>${esc(a.name||'')}</span></td>
       <td class="c">${a.zone&&a.zone!=='-'?`<span class="diff-zone-chip">${esc(a.zone)}</span>`:'-'}</td>
@@ -1996,9 +2124,10 @@ function diffRenderTable(){
       <td class="c">${diffBadge_(a.r[0])}</td>
       <td class="c">${diffBadge_(a.r[1])}</td>
       <td class="c">${diffBadge_(a.r[2])}</td>
+      <td class="c">${diffBadge_(a.r[3])}</td>
       <td>${summary}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="7" class="empty">ไม่พบรายการที่ตรงตัวกรอง</td></tr>';
+  }).join('') || '<tr><td colspan="8" class="empty">ไม่พบรายการที่ตรงตัวกรอง</td></tr>';
 }
 
 /* ---- Export: Diff Report PDF/Excel ---- */
@@ -2008,25 +2137,25 @@ async function exportDiffPDF(){
   try{
     const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
     registerThaiFont_(doc);
-    doc.setFont('Sarabun','bold'); doc.setFontSize(15); doc.text('รายงาน Diff การนับสต็อก (Precount → Regular → Count2 → Count3)',14,16);
+    doc.setFont('Sarabun','bold'); doc.setFontSize(15); doc.text('รายงาน Diff การนับสต็อก (Regular → Count 1 → Count 2 → Count 3)',14,16);
     doc.setFont('Sarabun','normal'); doc.setFontSize(9);
     doc.text('CJ LOGISTICS · WFDC    รอบนับ: '+(sess?sess.SessionID:'-')+'    ผู้นับ: '+(sess?sess.CreatedBy:'-')+'    วันที่: '+(sess?fmtDate(sess.CreatedDate):'-'),14,22);
-    doc.text(`Diff หลัง Regular: ${d.diffAfterRegular}    แก้ที่ Count2: ${d.resolvedAtC2}    แก้ที่ Count3: ${d.resolvedAtC3}    ยังคง Diff: ${d.stillOpen}`,14,28);
+    doc.text(`Diff หลัง Regular: ${d.diffAfterRegular}    แก้ที่ Count 1: ${d.resolvedAt[2]}    แก้ที่ Count 2: ${d.resolvedAt[3]}    แก้ที่ Count 3: ${d.resolvedAt[4]}    ยังคง Diff: ${d.stillOpen}`,14,28);
     const lbl=v=>({ok:'✓',miss:'-',extra:'+',pending:'รอ',na:'-'}[v]||'-');
     const body=d.all.map(a=>[a.wfdcId, a.makroTag&&a.makroTag!=='-'?a.makroTag:'-', a.name||'', a.zone&&a.zone!=='-'?a.zone:'-',
-      lbl(a.r[0]), lbl(a.r[1]), lbl(a.r[2]), a.resolved?('แก้แล้ว ('+a.resolvedAt+')'):'ยังไม่แก้']);
+      lbl(a.r[0]), lbl(a.r[1]), lbl(a.r[2]), lbl(a.r[3]), a.resolved?('แก้แล้ว ('+a.resolvedAt+')'):'ยังไม่แก้']);
     doc.autoTable({
-      startY:34, head:[['WFDC','Makro','ชื่อ','โซน','Regular','Count 2','Count 3','สรุปผล']],
+      startY:34, head:[['WFDC','Makro','ชื่อ','โซน','Regular','Count 1','Count 2','Count 3','สรุปผล']],
       body, styles:{font:'Sarabun',fontStyle:'normal',fontSize:8,cellPadding:2,valign:'middle'},
       headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]},
       didParseCell:function(dc){
-        if(dc.section==='body' && dc.column.index>=4 && dc.column.index<=6){
+        if(dc.section==='body' && dc.column.index>=4 && dc.column.index<=7){
           const v=dc.cell.raw;
           if(v==='-') dc.cell.styles.textColor=[200,0,0];
           else if(v==='+') dc.cell.styles.textColor=[200,140,0];
           else if(v==='✓') dc.cell.styles.textColor=[0,140,0];
         }
-        if(dc.section==='body' && dc.column.index===7){
+        if(dc.section==='body' && dc.column.index===8){
           const v=String(dc.cell.raw);
           dc.cell.styles.textColor = v.indexOf('แก้แล้ว')===0 ? [0,140,0] : [200,0,0];
         }
@@ -2046,17 +2175,18 @@ async function exportDiffExcel(){
     s1.addRow(['รอบนับ', sess?sess.SessionID:'-']); s1.addRow(['ผู้นับ', sess?sess.CreatedBy:'-']); s1.addRow(['วันที่', sess?fmtDate(sess.CreatedDate):'-']);
     s1.addRow([]);
     s1.addRow(['Diff หลัง Regular', d.diffAfterRegular]);
-    s1.addRow(['แก้ไขได้ที่ Count 2', d.resolvedAtC2]);
-    s1.addRow(['แก้ไขได้ที่ Count 3', d.resolvedAtC3]);
+    s1.addRow(['แก้ไขได้ที่ Count 1', d.resolvedAt[2]]);
+    s1.addRow(['แก้ไขได้ที่ Count 2', d.resolvedAt[3]]);
+    s1.addRow(['แก้ไขได้ที่ Count 3', d.resolvedAt[4]]);
     s1.addRow(['ยังคง Diff', d.stillOpen]);
     const s2=wb.addWorksheet('รายการ Diff');
     s2.columns=[{header:'WFDC',width:14},{header:'Makro',width:14},{header:'ชื่อ',width:26},{header:'โซน',width:10},
-      {header:'Regular',width:10},{header:'Count 2',width:10},{header:'Count 3',width:10},{header:'สรุปผล',width:20}];
+      {header:'Regular',width:10},{header:'Count 1',width:10},{header:'Count 2',width:10},{header:'Count 3',width:10},{header:'สรุปผล',width:20}];
     s2.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; s2.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0D2A52'}};
     const lbl=v=>({ok:'✓',miss:'-',extra:'+',pending:'รอ',na:'-'}[v]||'-');
     d.all.forEach(a=>{
       s2.addRow([a.wfdcId, a.makroTag&&a.makroTag!=='-'?a.makroTag:'-', a.name||'', a.zone&&a.zone!=='-'?a.zone:'-',
-        lbl(a.r[0]), lbl(a.r[1]), lbl(a.r[2]), a.resolved?('แก้แล้ว ('+a.resolvedAt+')'):'ยังไม่แก้']);
+        lbl(a.r[0]), lbl(a.r[1]), lbl(a.r[2]), lbl(a.r[3]), a.resolved?('แก้แล้ว ('+a.resolvedAt+')'):'ยังไม่แก้']);
     });
     const buf=await wb.xlsx.writeBuffer();
     dl(new Blob([buf]),'DiffReport_'+(sess?sess.SessionID:'session')+'_'+today()+'.xlsx');
