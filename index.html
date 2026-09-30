@@ -136,39 +136,47 @@ td.wrap{white-space:normal}
 /* stat cards */
 @keyframes fadeSlideUp{ from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);
-  position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
-  animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both;}
-.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy);
-  transform:scaleY(0);transform-origin:bottom;transition:transform .35s ease}
-.stat:hover{transform:translateY(-5px);box-shadow:0 14px 28px -12px rgba(13,42,82,.28)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);
+  position:relative;overflow:hidden;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s;
+  animation:fadeSlideUp .4s cubic-bezier(.2,.8,.2,1) both;}
+.stat.has-ic{display:flex;align-items:center;gap:10px}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--navy);
+  transform:scaleY(0);transform-origin:bottom;transition:transform .3s ease}
+.stat:hover{transform:translateY(-3px);box-shadow:0 10px 20px -10px rgba(13,42,82,.25)}
 .stat:hover::before{transform:scaleY(1)}
 .stats .stat:nth-child(1){animation-delay:.02s}
-.stats .stat:nth-child(2){animation-delay:.10s}
-.stats .stat:nth-child(3){animation-delay:.18s}
-.stats .stat:nth-child(4){animation-delay:.26s}
-.stats .stat:nth-child(5){animation-delay:.34s}
-.stat .n{font-size:28px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;display:inline-block}
-.stat .l{font-size:13px;color:var(--muted);margin-top:2px}
+.stats .stat:nth-child(2){animation-delay:.08s}
+.stats .stat:nth-child(3){animation-delay:.14s}
+.stats .stat:nth-child(4){animation-delay:.20s}
+.stats .stat:nth-child(5){animation-delay:.26s}
+.stat .ic{flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:#eef2f9;display:flex;
+  align-items:center;justify-content:center;font-size:16px}
+.stat .txt{min-width:0}
+.stat .n{font-size:19px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.15;display:block}
+.stat .l{font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat.accent{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.stat.accent .ic{background:rgba(255,255,255,.18)}
 .stat.accent::before{background:var(--red)}
 .stat.accent .n,.stat.accent .l{color:#fff}
-.stat.accent:hover{box-shadow:0 16px 32px -12px rgba(13,42,82,.55)}
-.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:760px){.charts{grid-template-columns:1fr}}
-.chart-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);
-  transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
-  animation:fadeSlideUp .55s cubic-bezier(.2,.8,.2,1) both;}
-.chart-card:hover{transform:translateY(-4px);box-shadow:0 14px 28px -14px rgba(13,42,82,.25)}
-.charts .chart-card:nth-child(1){animation-delay:.06s}
-.charts .chart-card:nth-child(2){animation-delay:.14s}
-.charts .chart-card:nth-child(3){animation-delay:.22s}
-.charts .chart-card:nth-child(4){animation-delay:.30s}
-.chart-card h3{margin:0 0 12px;font-size:15px;color:var(--navy);position:relative;padding-left:12px}
-.chart-card h3::before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:4px;border-radius:3px;
+.stat.accent:hover{box-shadow:0 12px 24px -10px rgba(13,42,82,.5)}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.chart-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 14px;box-shadow:var(--shadow);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s;
+  animation:fadeSlideUp .45s cubic-bezier(.2,.8,.2,1) both;}
+.chart-card:hover{transform:translateY(-3px);box-shadow:0 10px 22px -12px rgba(13,42,82,.22)}
+.charts .chart-card:nth-child(1){animation-delay:.04s}
+.charts .chart-card:nth-child(2){animation-delay:.10s}
+.charts .chart-card:nth-child(3){animation-delay:.16s}
+.charts .chart-card:nth-child(4){animation-delay:.22s}
+.chart-card h3{margin:0 0 8px;font-size:13px;color:var(--navy);position:relative;padding-left:10px;font-weight:700}
+.chart-card h3::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:3px;border-radius:3px;
   background:linear-gradient(180deg,var(--navy),var(--red))}
-#dashCount{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) .38s both}
+.chart-box{position:relative;height:175px}
+.chart-box canvas{max-height:100%}
+#dashCount{animation:fadeSlideUp .45s cubic-bezier(.2,.8,.2,1) .3s both}
+#dashCount h3{font-size:14px}
 
 /* modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(12,26,45,.55);z-index:80;align-items:flex-start;justify-content:center;padding:20px;overflow:auto}
@@ -357,10 +365,10 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
           <button class="btn ghost sm" onclick="loadDashboard()">↻ รีเฟรช</button></div>
         <div id="dashStats" class="stats"></div>
         <div class="charts">
-          <div class="chart-card"><h3>แยกตามหมวดหมู่</h3><canvas id="chCat"></canvas></div>
-          <div class="chart-card"><h3>แยกตามสถานะ</h3><canvas id="chStatus"></canvas></div>
-          <div class="chart-card"><h3>แยกตามโซน</h3><canvas id="chZone"></canvas></div>
-          <div class="chart-card"><h3>แหล่งที่มา (Makro vs จัดซื้อเอง)</h3><canvas id="chSource"></canvas></div>
+          <div class="chart-card"><h3>แยกตามหมวดหมู่</h3><div class="chart-box"><canvas id="chCat"></canvas></div></div>
+          <div class="chart-card"><h3>แยกตามสถานะ</h3><div class="chart-box"><canvas id="chStatus"></canvas></div></div>
+          <div class="chart-card"><h3>แยกตามโซน</h3><div class="chart-box"><canvas id="chZone"></canvas></div></div>
+          <div class="chart-card"><h3>แหล่งที่มา (Makro vs จัดซื้อเอง)</h3><div class="chart-box"><canvas id="chSource"></canvas></div></div>
         </div>
         <div class="card" id="dashCount"></div>
       </section>
@@ -428,7 +436,7 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
             <!-- compare + chart -->
             <div class="charts">
               <div class="chart-card"><h3>เทียบรอบก่อน</h3><div id="cdCompare"></div></div>
-              <div class="chart-card"><h3>%ความแม่นยำ ย้อนหลัง</h3><canvas id="cdChart"></canvas></div>
+              <div class="chart-card"><h3>%ความแม่นยำ ย้อนหลัง</h3><div class="chart-box"><canvas id="cdChart"></canvas></div></div>
             </div>
           </div>
 
@@ -1336,10 +1344,10 @@ async function loadDashboard(){
     const st=document.getElementById('dashStats');
     const mk=d.makroVsOwn;
     st.innerHTML=`
-      <div class="stat accent"><div class="n" data-v="${d.total}">0</div><div class="l">📦 ทรัพย์สินทั้งหมด</div></div>
-      <div class="stat"><div class="n" data-v="${d.byStatus['ใช้งานปกติ']||0}">0</div><div class="l">✅ ใช้งานปกติ</div></div>
-      <div class="stat"><div class="n" data-v="${d.byStatus['ชำรุด']||0}">0</div><div class="l">⚠️ ชำรุด</div></div>
-      <div class="stat"><div class="n" data-v="${mk.makro}">0</div><div class="l">🏷️ รับจาก Makro</div></div>`;
+      <div class="stat has-ic accent"><div class="ic">📦</div><div class="txt"><span class="n" data-v="${d.total}">0</span><div class="l">ทรัพย์สินทั้งหมด</div></div></div>
+      <div class="stat has-ic"><div class="ic">✅</div><div class="txt"><span class="n" data-v="${d.byStatus['ใช้งานปกติ']||0}">0</span><div class="l">ใช้งานปกติ</div></div></div>
+      <div class="stat has-ic"><div class="ic">⚠️</div><div class="txt"><span class="n" data-v="${d.byStatus['ชำรุด']||0}">0</span><div class="l">ชำรุด</div></div></div>
+      <div class="stat has-ic"><div class="ic">🏷️</div><div class="txt"><span class="n" data-v="${mk.makro}">0</span><div class="l">รับจาก Makro</div></div></div>`;
     st.querySelectorAll('.n').forEach(el=>animateNumber_(el, el.dataset.v));
     drawDonut('chCat', d.byCategory);
     drawBar('chStatus', d.byStatus, ['#1a9d5a','#2b5fb0','#e0a100','#e2231a','#8494a8']);
@@ -1362,8 +1370,8 @@ function drawDonut(id,obj){
   charts[id]=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(obj),
     datasets:[{data:Object.values(obj),backgroundColor:['#0d2a52','#2b5fb0','#1a9d5a','#e0a100','#e2231a','#8e6fd0','#28b3b3','#8494a8'],
       hoverOffset:10,borderWidth:2,borderColor:'#fff'}]},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},usePointStyle:true,pointStyle:'circle'}}},cutout:'62%',
-      animation:{duration:900,easing:'easeOutQuart',animateRotate:true,animateScale:true},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10.5},boxWidth:10,padding:8,usePointStyle:true,pointStyle:'circle'}}},cutout:'66%',
+      animation:{duration:700,easing:'easeOutQuart',animateRotate:true,animateScale:true},
       interaction:{intersect:true},hover:{mode:'nearest'}}});
 }
 function drawBar(id,obj,colors){
@@ -1371,9 +1379,10 @@ function drawBar(id,obj,colors){
   const labels=Object.keys(obj);
   charts[id]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:Object.values(obj),
     backgroundColor:labels.map((_,i)=>colors[i%colors.length]),borderRadius:6,
-    hoverBackgroundColor:labels.map((_,i)=>colors[i%colors.length]),maxBarThickness:46}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}},
-      animation:{duration:800,easing:'easeOutQuart',delay:(ctx2)=>ctx2.dataIndex*60}}});
+    hoverBackgroundColor:labels.map((_,i)=>colors[i%colors.length]),maxBarThickness:34}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:10.5}}},x:{ticks:{font:{size:10.5}}}},
+      animation:{duration:650,easing:'easeOutQuart',delay:(ctx2)=>ctx2.dataIndex*50}}});
 }
 
 /* ============ ASSETS ============ */
@@ -1762,8 +1771,9 @@ async function cdRenderChart(sid){
   }
   const ctx=document.getElementById('cdChart');
   if(cdChartObj)cdChartObj.destroy();
-  cdChartObj=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'%ความแม่นยำ',data,backgroundColor:'#1a4b8c'}]},
-    options:{scales:{y:{beginAtZero:true,max:100}},plugins:{legend:{display:false}}}});
+  cdChartObj=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'%ความแม่นยำ',data,backgroundColor:'#1a4b8c',borderRadius:6,maxBarThickness:34}]},
+    options:{maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100,ticks:{font:{size:10.5}}},x:{ticks:{font:{size:10.5}}}},
+      plugins:{legend:{display:false}},animation:{duration:650,easing:'easeOutQuart'}}});
 }
 // ยกเลิก listener เมื่อออกจากหน้า (กัน memory leak / อ่าน quota เปล่า)
 function cdCleanup(){ if(cdUnsub){ cdUnsub(); cdUnsub=null; } }
