@@ -134,16 +134,41 @@ td.wrap{white-space:normal}
 .photo-slot input{display:none}
 
 /* stat cards */
+@keyframes fadeSlideUp{ from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
-.stat .n{font-size:28px;font-weight:800;color:var(--navy)}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);
+  position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
+  animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both;}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy);
+  transform:scaleY(0);transform-origin:bottom;transition:transform .35s ease}
+.stat:hover{transform:translateY(-5px);box-shadow:0 14px 28px -12px rgba(13,42,82,.28)}
+.stat:hover::before{transform:scaleY(1)}
+.stats .stat:nth-child(1){animation-delay:.02s}
+.stats .stat:nth-child(2){animation-delay:.10s}
+.stats .stat:nth-child(3){animation-delay:.18s}
+.stats .stat:nth-child(4){animation-delay:.26s}
+.stats .stat:nth-child(5){animation-delay:.34s}
+.stat .n{font-size:28px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;display:inline-block}
 .stat .l{font-size:13px;color:var(--muted);margin-top:2px}
 .stat.accent{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.stat.accent::before{background:var(--red)}
 .stat.accent .n,.stat.accent .l{color:#fff}
+.stat.accent:hover{box-shadow:0 16px 32px -12px rgba(13,42,82,.55)}
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:760px){.charts{grid-template-columns:1fr}}
-.chart-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
-.chart-card h3{margin:0 0 12px;font-size:15px;color:var(--navy)}
+.chart-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);
+  transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
+  animation:fadeSlideUp .55s cubic-bezier(.2,.8,.2,1) both;}
+.chart-card:hover{transform:translateY(-4px);box-shadow:0 14px 28px -14px rgba(13,42,82,.25)}
+.charts .chart-card:nth-child(1){animation-delay:.06s}
+.charts .chart-card:nth-child(2){animation-delay:.14s}
+.charts .chart-card:nth-child(3){animation-delay:.22s}
+.charts .chart-card:nth-child(4){animation-delay:.30s}
+.chart-card h3{margin:0 0 12px;font-size:15px;color:var(--navy);position:relative;padding-left:12px}
+.chart-card h3::before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:4px;border-radius:3px;
+  background:linear-gradient(180deg,var(--navy),var(--red))}
+#dashCount{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) .38s both}
 
 /* modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(12,26,45,.55);z-index:80;align-items:flex-start;justify-content:center;padding:20px;overflow:auto}
@@ -295,7 +320,7 @@ table.diff-tbl tbody tr:hover{background:#fafbfd}
     <h1>Asset Checker</h1>
     <div class="sub">ระบบทะเบียนทรัพย์สิน WFDC · เข้าสู่ระบบด้วยเลขพนักงาน</div>
     <label class="f">เลขพนักงาน (Employee ID)</label>
-    <input id="empId" class="inp" placeholder="เช่น TH060000" autocomplete="off">
+    <input id="empId" class="inp" placeholder="เช่น TH061378" autocomplete="off">
     <button id="loginBtn" class="btn primary" style="width:100%;margin-top:16px">เข้าสู่ระบบ</button>
     <div id="loginMsg" class="muted" style="margin-top:12px;color:var(--red)"></div>
   </div>
@@ -1293,16 +1318,29 @@ function statusChip(s){
 
 /* ============ DASHBOARD ============ */
 let charts={};
+// นับตัวเลขไล่ขึ้นแบบนุ่ม ๆ (count-up) ให้การ์ดสถิติดูมีชีวิตชีวาขึ้นตอนโหลด/รีเฟรช
+function animateNumber_(el, to){
+  to = Number(to)||0;
+  const from = 0, dur = 700, start = performance.now();
+  const ease = t => 1-Math.pow(1-t,3); // easeOutCubic
+  function step(now){
+    const p = Math.min(1,(now-start)/dur);
+    el.textContent = Math.round(from + (to-from)*ease(p)).toLocaleString('th-TH');
+    if(p<1) requestAnimationFrame(step); else el.textContent = to.toLocaleString('th-TH');
+  }
+  requestAnimationFrame(step);
+}
 async function loadDashboard(){
   try{
     const d=(await api('dashboard')).data;
     const st=document.getElementById('dashStats');
     const mk=d.makroVsOwn;
     st.innerHTML=`
-      <div class="stat accent"><div class="n">${d.total}</div><div class="l">ทรัพย์สินทั้งหมด</div></div>
-      <div class="stat"><div class="n">${d.byStatus['ใช้งานปกติ']||0}</div><div class="l">ใช้งานปกติ</div></div>
-      <div class="stat"><div class="n">${d.byStatus['ชำรุด']||0}</div><div class="l">ชำรุด</div></div>
-      <div class="stat"><div class="n">${mk.makro}</div><div class="l">รับจาก Makro</div></div>`;
+      <div class="stat accent"><div class="n" data-v="${d.total}">0</div><div class="l">📦 ทรัพย์สินทั้งหมด</div></div>
+      <div class="stat"><div class="n" data-v="${d.byStatus['ใช้งานปกติ']||0}">0</div><div class="l">✅ ใช้งานปกติ</div></div>
+      <div class="stat"><div class="n" data-v="${d.byStatus['ชำรุด']||0}">0</div><div class="l">⚠️ ชำรุด</div></div>
+      <div class="stat"><div class="n" data-v="${mk.makro}">0</div><div class="l">🏷️ รับจาก Makro</div></div>`;
+    st.querySelectorAll('.n').forEach(el=>animateNumber_(el, el.dataset.v));
     drawDonut('chCat', d.byCategory);
     drawBar('chStatus', d.byStatus, ['#1a9d5a','#2b5fb0','#e0a100','#e2231a','#8494a8']);
     drawBar('chZone', d.byZone, ['#0d2a52']);
@@ -1310,26 +1348,32 @@ async function loadDashboard(){
     const lc=d.latestCount, box=document.getElementById('dashCount');
     if(lc){ box.innerHTML=`<h3 style="margin:0 0 10px;color:var(--navy)">ผลนับสต็อกล่าสุด · รอบ ${lc.round} · ${esc(lc.status)}</h3>
       <div class="stats" style="margin:0">
-        <div class="stat"><div class="n" style="color:var(--ok)">${lc.found}</div><div class="l">พบ</div></div>
-        <div class="stat"><div class="n" style="color:var(--danger)">${lc.missing}</div><div class="l">ขาด</div></div>
-        <div class="stat"><div class="n" style="color:var(--warn)">${lc.extra}</div><div class="l">เกิน</div></div>
-        <div class="stat"><div class="n">${lc.total}</div><div class="l">คาดว่ามี</div></div>
+        <div class="stat"><div class="n" style="color:var(--ok)" data-v="${lc.found}">0</div><div class="l">พบ</div></div>
+        <div class="stat"><div class="n" style="color:var(--danger)" data-v="${lc.missing}">0</div><div class="l">ขาด</div></div>
+        <div class="stat"><div class="n" style="color:var(--warn)" data-v="${lc.extra}">0</div><div class="l">เกิน</div></div>
+        <div class="stat"><div class="n" data-v="${lc.total}">0</div><div class="l">คาดว่ามี</div></div>
       </div><div class="muted" style="margin-top:8px">${esc(lc.date)}</div>`;
+      box.querySelectorAll('.n').forEach(el=>animateNumber_(el, el.dataset.v));
     } else box.innerHTML='<div class="empty">ยังไม่มีการนับสต็อก</div>';
   }catch(e){toast(e.message,'err');}
 }
 function drawDonut(id,obj){
   const ctx=document.getElementById(id); if(charts[id])charts[id].destroy();
   charts[id]=new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(obj),
-    datasets:[{data:Object.values(obj),backgroundColor:['#0d2a52','#2b5fb0','#1a9d5a','#e0a100','#e2231a','#8e6fd0','#28b3b3','#8494a8']}]},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},cutout:'62%'}});
+    datasets:[{data:Object.values(obj),backgroundColor:['#0d2a52','#2b5fb0','#1a9d5a','#e0a100','#e2231a','#8e6fd0','#28b3b3','#8494a8'],
+      hoverOffset:10,borderWidth:2,borderColor:'#fff'}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11},usePointStyle:true,pointStyle:'circle'}}},cutout:'62%',
+      animation:{duration:900,easing:'easeOutQuart',animateRotate:true,animateScale:true},
+      interaction:{intersect:true},hover:{mode:'nearest'}}});
 }
 function drawBar(id,obj,colors){
   const ctx=document.getElementById(id); if(charts[id])charts[id].destroy();
   const labels=Object.keys(obj);
   charts[id]=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:Object.values(obj),
-    backgroundColor:labels.map((_,i)=>colors[i%colors.length]),borderRadius:6}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+    backgroundColor:labels.map((_,i)=>colors[i%colors.length]),borderRadius:6,
+    hoverBackgroundColor:labels.map((_,i)=>colors[i%colors.length]),maxBarThickness:46}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}},
+      animation:{duration:800,easing:'easeOutQuart',delay:(ctx2)=>ctx2.dataIndex*60}}});
 }
 
 /* ============ ASSETS ============ */
