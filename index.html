@@ -2787,102 +2787,465 @@ async function cdLoadImages_(list, msgEl){
   }
   return map;
 }
-// ข้อมูลสำหรับ Export — เฉพาะของในขอบเขต (โซน/ประเภท) ของรอบนับ + ของเกินที่สแกนเจอ
-async function cdBuildReportData_(sid){
-  const sess=cdSessions.find(s=>s.SessionID===sid)||cdCurrent;
+/* ============ EXCEL DASHBOARD EXPORT ============
+   สร้างไฟล์ Excel แบบ Dashboard: แผ่น "Dashboard" (KPI + กราฟ + รายการที่ต้องติดตาม) และแผ่น "รายการ" (ตารางกรองได้)
+   ตัวเลขใน Dashboard เป็นสูตรที่อ้างอิงแผ่น "รายการ" — แก้ผลในรายการแล้วตัวเลขอัปเดตเอง */
+const XF='Tahoma';
+const XC={navy:'FF0D2A52',navy2:'FF163A6B',red:'FFE2231A',ok:'FF1A9D5A',warn:'FFB7791F',muted:'FF6B7A90',line:'FFE3E8F0',
+  bg:'FFF4F6FA',white:'FFFFFFFF',ink:'FF1C2B3F',c1:'FF2B5FB0',c2:'FF7A4FC0',c3:'FFE2231A',
+  tNavy:'FFEEF3FB',tOk:'FFE4F6EC',tRed:'FFFDE4E2',tWarn:'FFFEF3D6',tGray:'FFF1F4F9'};
+function xfill_(c){ return {type:'pattern',pattern:'solid',fgColor:{argb:c}}; }
+function xfont_(o){ return Object.assign({name:XF,size:10,color:{argb:XC.ink}},o||{}); }
+function xbox_(ws,range,o){ // merge + style ช่วงเซลล์
+  ws.mergeCells(range);
+  const c=ws.getCell(range.split(':')[0]);
+  if(o.v!==undefined) c.value=o.v;
+  c.font=xfont_(o.font); c.alignment=Object.assign({vertical:'middle',horizontal:'left',wrapText:true,indent:o.indent||0},o.align||{});
+  if(o.fill){ const [a,b]=range.split(':'); const s=ws.getCell(a), e=ws.getCell(b);
+    for(let r=s.row;r<=e.row;r++) for(let k=s.col;k<=e.col;k++){ const cc=ws.getCell(r,k); cc.fill=xfill_(o.fill); if(o.border) cc.border=o.border; } }
+  if(o.numFmt) c.numFmt=o.numFmt;
+  return c;
+}
+function xside_(ws,range,color,side){ // เส้นขอบหนาด้านใดด้านหนึ่งของกล่อง
+  const [a,b]=range.split(':'); const s=ws.getCell(a), e=ws.getCell(b);
+  for(let r=s.row;r<=e.row;r++) for(let k=s.col;k<=e.col;k++){
+    const cc=ws.getCell(r,k), bd=Object.assign({},cc.border||{});
+    if(side==='left'&&k===s.col) bd.left={style:'thick',color:{argb:color}};
+    if(side==='top'&&r===s.row) bd.top={style:'thick',color:{argb:color}};
+    if(side==='bottom'&&r===e.row) bd.bottom={style:'thin',color:{argb:color}};
+    cc.border=bd; }
+}
+async function xChartPng_(cfg,w,h){ // วาด Chart.js ลง canvas นอกจอ แล้วคืน PNG base64
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.style.cssText=`position:fixed;left:-9999px;width:${w}px;height:${h}px`;
+  document.body.appendChild(cv);
+  Chart.defaults.font.family='Sarabun, Tahoma, sans-serif';
+  cfg.options=Object.assign({responsive:false,animation:false,devicePixelRatio:2},cfg.options||{});
+  const ch=new Chart(cv,cfg); await new Promise(r=>setTimeout(r,30));
+  const url=cv.toDataURL('image/png'); ch.destroy(); cv.remove();
+  return url;
+}
+
+/* ctx = { session, d, rows, prev, history:[{label,reg,fin}], withPhoto, imgMap, filterTxt } */
+async function cdBuildExcelDashboard_(ctx){
+  const {session:s, d, rows, prev, history, withPhoto, imgMap, filterTxt}=ctx;
+  const wb=new ExcelJS.Workbook(); wb.creator='Asset Checker · WFDC'; wb.created=new Date();
+  const ws=wb.addWorksheet('Dashboard',{views:[{showGridLines:false}],properties:{tabColor:{argb:XC.navy}}});
+  const wl=wb.addWorksheet('รายการ',{views:[{state:'frozen',ySplit:3,showGridLines:false}],properties:{tabColor:{argb:XC.ok}}});
+  const L="'รายการ'!"; const T=d.total;
+  const cur=parseInt(s.Round,10)||1, done=s.Status==='done';
+
+  /* ---------- แผ่น "รายการ" ---------- */
+  const nCols= withPhoto?9:8;
+  wl.columns=[{width:7},{width:16},{width:14},{width:34},{width:20},{width:14},{width:16},{width:11}].concat(withPhoto?[{width:13}]:[]);
+  wl.mergeCells(1,1,1,nCols); const t1=wl.getCell(1,1);
+  t1.value='รายการนับสต็อก · '+s.SessionID+' · '+(s.Zone||'ทั้งคลัง')+' · '+(s.Category||'ทุกประเภท');
+  t1.font=xfont_({size:13,bold:true,color:{argb:XC.white}}); t1.fill=xfill_(XC.navy); t1.alignment={vertical:'middle',indent:1}; wl.getRow(1).height=26;
+  wl.mergeCells(2,1,2,nCols); const t2=wl.getCell(2,1);
+  t2.value=filterTxt+' · '+rows.length+' แถว · ข้อมูล ณ '+fmtDate(new Date().toISOString());
+  t2.font=xfont_({size:9,color:{argb:XC.muted}}); t2.alignment={indent:1};
+  const RN={1:'Regular Count',2:'Count 1',3:'Count 2',4:'Count 3'};
+  wl.addTable({ name:'CountItems', ref:'A3', headerRow:true, style:{theme:'TableStyleLight9',showRowStripes:true},
+    columns:['ลำดับ','WFDC','Makro','ชื่อทรัพย์สิน','หมวด','โซน','เจอในรอบ','ผล'].concat(withPhoto?['รูป']:[]).map(n=>({name:n,filterButton:n!=='รูป'})),
+    rows: rows.map((a,i)=>[i+1,a.wfdcId,a.makroTag||'-',a.name||'',a.category||'-',a.zone||'-',a._round?RN[Math.min(a._round,4)]:'-',a._state].concat(withPhoto?['']:[])) });
+  const stC={'พบ':[XC.tOk,XC.ok],'ขาด':[XC.tRed,XC.red],'เกิน':[XC.tWarn,XC.warn]};
+  wl.getRow(3).height=22;
+  wl.getRow(3).eachCell(c=>{ c.font=xfont_({bold:true,color:{argb:XC.white}}); c.fill=xfill_(XC.navy2); c.alignment={vertical:'middle',horizontal:'center'}; });
+  rows.forEach((a,i)=>{ const r=wl.getRow(4+i); r.height=withPhoto?44:20;
+    r.eachCell({includeEmpty:true},(c,k)=>{ if(k>nCols) return; c.font=xfont_(); c.alignment={vertical:'middle',horizontal:[1,7,8].includes(k)?'center':'left',wrapText:k===4};
+      c.border={bottom:{style:'hair',color:{argb:XC.line}}}; });
+    r.getCell(2).font=xfont_({bold:true});
+    const sc=stC[a._state]; const h=r.getCell(8); h.font=xfont_({bold:true,color:{argb:sc[1]}}); h.fill=xfill_(sc[0]);
+    if(a._round){ const g=r.getCell(7); g.font=xfont_({bold:true,color:{argb:[XC.navy,XC.c1,XC.c2,XC.c3][Math.min(a._round,4)-1]}}); }
+    if(withPhoto && imgMap && imgMap[a.assetId]){ const img=imgMap[a.assetId];
+      try{ const id=wb.addImage({base64:img.data,extension:img.fmt==='PNG'?'png':'jpeg'}); wl.addImage(id,{tl:{col:8.1,row:3+i+0.08},ext:{width:54,height:54}}); }catch(e){} }
+  });
+  wl.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'3:3',margins:{left:.4,right:.4,top:.5,bottom:.5,header:.2,footer:.2}};
+  const lastR=3+rows.length;
+  const rngH=L+'$H$4:$H$'+Math.max(4,lastR), rngG=L+'$G$4:$G$'+Math.max(4,lastR);
+
+  /* ---------- แผ่น "Dashboard" ---------- */
+  ws.columns=[{width:2}].concat(Array(12).fill({width:11})).concat([{width:2}]);
+  ws.getRow(1).height=8;
+  // Banner
+  xbox_(ws,'B2:I3',{v:'รายงานการนับสต็อกทรัพย์สิน',fill:XC.navy,font:{size:20,bold:true,color:{argb:XC.white}},indent:1});
+  const stTxt= done ? (d.missing+d.extra===0?'✓ ปิดจบ · ไม่มี Diff ค้าง':'✓ ปิดจบ · Diff ค้าง '+(d.missing+d.extra)) : (s.Status==='round_closed'?'⏸ ปิด '+roundName_(cur)+' · รอรอบถัดไป':'● กำลังนับ '+roundName_(cur)+' (ฉบับร่าง)');
+  xbox_(ws,'J2:M3',{v:stTxt,fill:done?(d.missing+d.extra===0?XC.ok:XC.warn):XC.red,font:{size:12,bold:true,color:{argb:XC.white}},align:{horizontal:'center'}});
+  ws.getRow(2).height=22; ws.getRow(3).height=22;
+  xbox_(ws,'B4:M4',{v:`${s.SessionID}   ·   โซน ${s.Zone||'ทั้งคลัง'}   ·   ประเภท ${s.Category||'ทุกประเภท'}   ·   ${done?'สิ้นสุดที่':'อยู่ที่'} ${roundName_(cur)}   ·   ผู้นับ ${s.CreatedBy}   ·   ${fmtDate(s.CreatedDate)}`,
+    fill:XC.tNavy,font:{size:10,color:{argb:XC.navy2},bold:true},indent:1});
+  ws.getRow(4).height=24;
+  // Steps
+  ws.getRow(5).height=6;
+  ['B6:D6','E6:G6','H6:J6','K6:M6'].forEach((rg,i)=>{ const n=i+1;
+    const ok= n<cur || (n===cur && s.Status!=='counting' && s.Status!=='recheck'), act=n===cur&&!ok, skip=!ok&&!act&&done;
+    xbox_(ws,rg,{v:(ok?'✓  ':act?'●  ':skip?'—  ':'○  ')+ROUND_NAMES[i]+(skip?'  (ข้าม)':''),fill:ok?XC.tOk:act?XC.tRed:XC.tGray,
+      font:{bold:true,color:{argb:ok?XC.ok:act?XC.red:XC.muted},strike:skip},align:{horizontal:'center'}});
+    ws.getCell(rg.split(':')[0]).border={}; });
+  ws.getRow(6).height=22; ws.getRow(7).height=10;
+  // KPI tiles
+  const kpis=[
+    ['B','D','■  ในขอบเขตรอบนี้',`COUNTIF(${rngH},"พบ")+COUNTIF(${rngH},"ขาด")`,T,null,XC.navy,XC.tNavy],
+    ['E','G','✓  พบ',`COUNTIF(${rngH},"พบ")`,d.found,'found',XC.ok,XC.tOk],
+    ['H','J','✕  ขาด',`COUNTIF(${rngH},"ขาด")`,d.missing,'miss',XC.red,XC.tRed],
+    ['K','M','+  เกิน (นอกระบบ/นอกขอบเขต)',`COUNTIF(${rngH},"เกิน")`,d.extra,'ext',XC.warn,XC.tWarn]];
+  kpis.forEach(([a,b,lbl,f,val,kind,col,tint])=>{
+    xbox_(ws,`${a}8:${b}8`,{v:lbl,fill:tint,font:{bold:true,size:10,color:{argb:col}},indent:1});
+    xbox_(ws,`${a}9:${b}10`,{v:{formula:f,result:val},fill:tint,font:{bold:true,size:28,color:{argb:col}},indent:1,numFmt:'#,##0'});
+    const pv = kind ? {formula:`IFERROR(${a}9/$B$9,0)`,result:T?val/T:0} : 'รายการ';
+    xbox_(ws,`${a}11:${b}11`,{v:kind?pv:'รายการทั้งหมดที่ควรมี',fill:tint,font:{size:10,color:{argb:XC.muted}},indent:1,numFmt:kind?'0.0% "ของทั้งหมด"':undefined});
+    xside_(ws,`${a}8:${b}11`,col,'top');
+  });
+  ws.getRow(9).height=24; ws.getRow(10).height=24; ws.getRow(12).height=12;
+
+  // อัตราพบ + เทียบรอบก่อน
+  const sec=(rg,txt)=>{ xbox_(ws,rg,{v:'▍ '+txt,font:{bold:true,size:12,color:{argb:XC.navy}}}); xside_(ws,rg,XC.line,'bottom'); };
+  sec('B13:G13','อัตราพบของ (Regular → สุดท้าย)'); sec('H13:M13','เทียบรอบก่อน (ขอบเขตเดียวกัน)');
+  ws.getRow(13).height=22;
+  const regF=`IFERROR(COUNTIFS(${rngG},"Regular Count",${rngH},"พบ")/(COUNTIF(${rngH},"พบ")+COUNTIF(${rngH},"ขาด")),0)`;
+  xbox_(ws,'B14:C14',{v:'ตอน Regular',font:{size:9,color:{argb:XC.muted}}});
+  xbox_(ws,'B15:C16',{v:{formula:regF,result:d.regPct/100},fill:XC.tNavy,font:{bold:true,size:22,color:{argb:XC.navy}},align:{horizontal:'center'},numFmt:'0.0%'});
+  xbox_(ws,'D15:D16',{v:'➜',font:{size:22,color:{argb:XC.muted}},align:{horizontal:'center'}});
+  xbox_(ws,'E14:F14',{v:'หลัง Count 1–3',font:{size:9,color:{argb:XC.muted}}});
+  xbox_(ws,'E15:F16',{v:{formula:'IFERROR(E9/B9,0)',result:d.finalPct/100},fill:XC.tOk,font:{bold:true,size:22,color:{argb:XC.ok}},align:{horizontal:'center'},numFmt:'0.0%'});
+  const dlt=(d.finalPct-d.regPct)/100;
+  xbox_(ws,'G15:G16',{v:{formula:'E15-B15',result:dlt},font:{bold:true,size:9,color:{argb:dlt>=0?XC.ok:XC.red}},align:{horizontal:'center'},numFmt:'▲ +0.0%;▼ -0.0%;"—"'});
+  xbox_(ws,'B17:G17',{v:'ตามนับซ้ำ (Count 1–3) ช่วยให้เจอของเพิ่ม '+(d.found-d.regFound)+' ชิ้น',font:{size:9,italic:true,color:{argb:XC.muted}}});
+  // compare table
+  const hdr=['ตัวชี้วัด','','รอบก่อน','รอบนี้','เปลี่ยน',''];
+  xbox_(ws,'H14:I14',{v:'ตัวชี้วัด',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},indent:1});
+  xbox_(ws,'J14:J14',{v:'รอบก่อน',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},align:{horizontal:'center'}});
+  xbox_(ws,'K14:K14',{v:'รอบนี้',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},align:{horizontal:'center'}});
+  xbox_(ws,'L14:M14',{v:'เปลี่ยน',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},align:{horizontal:'center'}});
+  if(prev){
+    const pl=prev.d.missing+prev.d.extra, cl=d.missing+d.extra;
+    const lines=[['อัตราพบ (Regular)',prev.d.regPct/100,d.regPct/100,'0.0%',false],['อัตราพบ (สุดท้าย)',prev.d.finalPct/100,d.finalPct/100,'0.0%',false],['ขาด/เกิน ค้างท้ายรอบ',pl,cl,'0',true]];
+    lines.forEach(([n,pv,cv,fmt,goodDown],i)=>{ const r=15+i, z=i%2?XC.white:XC.bg;
+      xbox_(ws,`H${r}:I${r}`,{v:n,fill:z,indent:1});
+      xbox_(ws,`J${r}:J${r}`,{v:pv,fill:z,align:{horizontal:'center'},numFmt:fmt,font:{color:{argb:XC.muted}}});
+      xbox_(ws,`K${r}:K${r}`,{v:cv,fill:z,align:{horizontal:'center'},numFmt:fmt,font:{bold:true}});
+      const df=cv-pv, good= df===0?null:(goodDown? df<0 : df>0);
+      xbox_(ws,`L${r}:M${r}`,{v:{formula:`K${r}-J${r}`,result:df},fill:z,align:{horizontal:'center'},
+        numFmt: fmt==='0'?'▲ +0" ชิ้น";▼ -0" ชิ้น";"— เท่าเดิม"':'▲ +0.0%;▼ -0.0%;"— เท่าเดิม"',
+        font:{bold:true,color:{argb:good===null?XC.muted:(good?XC.ok:XC.red)}}});
+    });
+    xbox_(ws,'H18:M18',{v:'เทียบกับ '+prev.session.SessionID+' · '+fmtDate(prev.session.CreatedDate),font:{size:9,italic:true,color:{argb:XC.muted}}});
+  }else{
+    xbox_(ws,'H15:M17',{v:'ยังไม่มีรอบก่อนของ '+(s.Zone||'ทั้งคลัง')+' · '+(s.Category||'ทุกประเภท')+' ให้เทียบ',fill:XC.bg,font:{color:{argb:XC.muted}},align:{horizontal:'center'}});
+  }
+  ws.getRow(15).height=20; ws.getRow(16).height=20; ws.getRow(19).height=12;
+
+  // พบของในรอบไหน (ตาราง + data bar) + โดนัท
+  sec('B20:G20','พบของในรอบไหน'); sec('H20:M20','สัดส่วนผลการนับ');
+  ws.getRow(20).height=22;
+  xbox_(ws,'B21:C21',{v:'รอบ',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},indent:1});
+  xbox_(ws,'D21:D21',{v:'จำนวน',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},align:{horizontal:'center'}});
+  xbox_(ws,'E21:E21',{v:'%',fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},align:{horizontal:'center'}});
+  xbox_(ws,'F21:G21',{v:'',fill:XC.navy2});
+  const rr=[['Regular Count',d.byRound[1],XC.navy,1],['Count 1',d.byRound[2],XC.c1,2],['Count 2',d.byRound[3],XC.c2,3],['Count 3',d.byRound[4],XC.c3,4],['ยังไม่เจอ (ขาด)',d.missing,XC.muted,0]];
+  rr.forEach(([n,v,col,rk],i)=>{ const r=22+i, z=i%2?XC.white:XC.bg, reached= rk===0 || rk<=cur;
+    xbox_(ws,`B${r}:C${r}`,{v:(rk?'●  ':'○  ')+n+(reached?'':(done?'  (ข้าม)':'  (ยังไม่ถึง)')),fill:z,font:{bold:true,color:{argb:reached?col:XC.muted}},indent:1});
+    const f = rk ? `COUNTIFS(${rngG},"${n}",${rngH},"พบ")` : 'H9';
+    xbox_(ws,`D${r}:D${r}`,{v:{formula:f,result:v},fill:z,align:{horizontal:'center'},font:{bold:true}});
+    xbox_(ws,`E${r}:E${r}`,{v:{formula:`IFERROR(D${r}/$B$9,0)`,result:T?v/T:0},fill:z,align:{horizontal:'center'},numFmt:'0.0%',font:{color:{argb:XC.muted}}});
+    xbox_(ws,`F${r}:G${r}`,{v:{formula:`IFERROR(REPT("█",ROUND(D${r}/$B$9*20,0)),"")`,result:'█'.repeat(T?Math.round(v/T*20):0)},fill:z,font:{size:9,color:{argb:col}}});
+    ws.getRow(r).height=20;
+  });
+  // donut image
+  const dn=await xChartPng_({type:'doughnut',data:{labels:['Regular','Count 1','Count 2','Count 3','ขาด','เกิน'],
+      datasets:[{data:[d.byRound[1],d.byRound[2],d.byRound[3],d.byRound[4],d.missing,d.extra],backgroundColor:['#0d2a52','#2b5fb0','#7a4fc0','#e2231a','#e9edf4','#f3c14b'],borderWidth:3,borderColor:'#fff'}]},
+    options:{cutout:'62%',layout:{padding:10},plugins:{legend:{position:'right',labels:{boxWidth:14,font:{size:15},padding:14,
+      generateLabels:ch=>ch.data.labels.map((l,i)=>({text:l+'  '+ch.data.datasets[0].data[i],fillStyle:ch.data.datasets[0].backgroundColor[i],strokeStyle:'#fff',index:i}))}}}},
+    plugins:[{id:'ctr',afterDraw(ch){ const {ctx:c}=ch, m=ch.getDatasetMeta(0).data[0]; if(!m) return; c.save(); c.textAlign='center';
+      c.fillStyle='#1c2b3f'; c.font='800 34px Sarabun, Tahoma'; c.fillText(d.finalPct+'%',m.x,m.y+6);
+      c.fillStyle='#6b7a90'; c.font='15px Sarabun, Tahoma'; c.fillText('พบ '+d.found+' / '+T,m.x,m.y+30); c.restore(); }}]},640,300);
+  ws.addImage(wb.addImage({base64:dn,extension:'png'}),{tl:{col:7.3,row:20.1},ext:{width:420,height:197}});
+
+  // History chart
+  ws.getRow(27).height=26;
+  sec('B28:M28','อัตราพบย้อนหลัง · เฉพาะ '+(s.Zone||'ทั้งคลัง')+' · '+(s.Category||'ทุกประเภท'));
+  ws.getRow(28).height=22;
+  if(history.length){
+    const hp=await xChartPng_({type:'line',data:{labels:history.map(h=>h.label),datasets:[
+        {label:'อัตราพบตอน Regular',data:history.map(h=>h.reg),borderColor:'#b7c3d6',borderDash:[8,6],borderWidth:3,pointRadius:5,pointBackgroundColor:'#b7c3d6',tension:.35},
+        {label:'อัตราพบสุดท้าย (หลัง Count 1–3)',data:history.map(h=>h.fin),borderColor:'#2b5fb0',backgroundColor:'rgba(43,95,176,.12)',fill:true,borderWidth:4,pointRadius:7,pointBackgroundColor:'#fff',pointBorderWidth:3,tension:.35}]},
+      options:{layout:{padding:{top:40,right:24}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:14}},grid:{color:'#eef1f6'}},x:{ticks:{font:{size:14}},grid:{display:false}}},
+        plugins:{legend:{position:'bottom',labels:{font:{size:15},boxWidth:22}}}},
+      plugins:[{id:'lbl',afterDatasetsDraw(ch){ const c=ch.ctx, m=ch.getDatasetMeta(1); c.save(); c.font='700 14px Sarabun, Tahoma'; c.fillStyle='#1c2b3f'; c.textAlign='center';
+        m.data.forEach((p,i)=>c.fillText(history[i].fin+'%',p.x,p.y-14)); c.restore(); }}]},1200,330);
+    ws.addImage(wb.addImage({base64:hp,extension:'png'}),{tl:{col:1,row:28.2},ext:{width:900,height:248}});
+  }else{
+    xbox_(ws,'B29:M30',{v:'ยังไม่มีข้อมูลย้อนหลัง',fill:XC.bg,font:{color:{argb:XC.muted}},align:{horizontal:'center'}});
+  }
+  for(let r=29;r<=41;r++) ws.getRow(r).height=15;
+
+  // รายการที่ต้องติดตาม
+  let r0=43;
+  const follow=d.rows.filter(a=>a._state==='ขาด').concat(d.extras);
+  sec(`B${r0}:M${r0}`,'รายการที่ต้องติดตาม (ขาด / เกิน) · '+follow.length+' รายการ'); ws.getRow(r0).height=22; r0++;
+  const fh=[['B','C','WFDC'],['D','G','ชื่อทรัพย์สิน'],['H','I','หมวด'],['J','J','โซน'],['K','K','ผล'],['L','M','หมายเหตุ / ผลตรวจสอบ']];
+  fh.forEach(([a,b,n])=>xbox_(ws,`${a}${r0}:${b}${r0}`,{v:n,fill:XC.navy2,font:{bold:true,color:{argb:XC.white}},indent:1}));
+  ws.getRow(r0).height=20; r0++;
+  if(!follow.length){
+    xbox_(ws,`B${r0}:M${r0+1}`,{v:'✓ ไม่มีรายการขาดหรือเกิน — ของตรงกับระบบทั้งหมด',fill:XC.tOk,font:{bold:true,color:{argb:XC.ok}},align:{horizontal:'center'}}); r0+=2;
+  }else follow.forEach((a,i)=>{ const z=i%2?XC.white:XC.bg, sc=stC[a._state];
+    xbox_(ws,`B${r0}:C${r0}`,{v:a.wfdcId,fill:z,font:{bold:true},indent:1});
+    xbox_(ws,`D${r0}:G${r0}`,{v:a.name||'',fill:z,indent:1});
+    xbox_(ws,`H${r0}:I${r0}`,{v:a.category||'-',fill:z,indent:1});
+    xbox_(ws,`J${r0}:J${r0}`,{v:a.zone||'-',fill:z,align:{horizontal:'center'}});
+    xbox_(ws,`K${r0}:K${r0}`,{v:a._state,fill:sc[0],font:{bold:true,color:{argb:sc[1]}},align:{horizontal:'center'}});
+    xbox_(ws,`L${r0}:M${r0}`,{v:'',fill:z});
+    ws.getRow(r0).height=20; r0++; });
+  // ช่องเซ็น
+  r0+=2;
+  [['B','E','ผู้นับ'],['F','I','ผู้ตรวจสอบ'],['J','M','ผู้อนุมัติ']].forEach(([a,b,n])=>{
+    xbox_(ws,`${a}${r0}:${b}${r0+2}`,{v:'',font:{}}); xside_(ws,`${a}${r0}:${b}${r0+2}`,XC.line,'bottom');
+    const sCell=ws.getCell(`${a}${r0}`); sCell.border={left:{style:'thin',color:{argb:XC.line}},right:{style:'thin',color:{argb:XC.line}},top:{style:'thin',color:{argb:XC.line}},bottom:{style:'thin',color:{argb:XC.line}}};
+    xbox_(ws,`${a}${r0+3}:${b}${r0+3}`,{v:n+'  ............................   วันที่ ......../......../........',font:{size:9,color:{argb:XC.muted}},align:{horizontal:'center'}});
+  });
+  r0+=5;
+  xbox_(ws,`B${r0}:M${r0}`,{v:'สร้างจาก Asset Checker · WFDC  ·  '+fmtDate(new Date().toISOString())+'  ·  ตัวเลขในหน้านี้คำนวณจากแผ่น "รายการ"',font:{size:8,italic:true,color:{argb:XC.muted}},align:{horizontal:'center'}});
+  ws.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,horizontalCentered:true,margins:{left:.3,right:.3,top:.4,bottom:.4,header:.2,footer:.2}};
+  ws.pageSetup.printArea='A1:N'+r0;
+  return wb;
+}
+
+/* ============ PDF DASHBOARD EXPORT ============
+   หน้า 1: Dashboard (KPI + อัตราพบ + เทียบรอบก่อน + พบในรอบไหน + โดนัท + กราฟย้อนหลัง + รายการที่ต้องติดตาม + ช่องเซ็น)
+   หน้าถัดไป: รายการทั้งหมดในขอบเขต (ตาราง) */
+const PC={navy:[13,42,82],navy2:[22,58,107],red:[226,35,26],ok:[26,157,90],warn:[183,121,31],muted:[107,122,144],line:[227,232,240],
+  ink:[28,43,63],bg:[244,246,250],white:[255,255,255],c1:[43,95,176],c2:[122,79,192],c3:[226,35,26],
+  tNavy:[238,243,251],tOk:[228,246,236],tRed:[253,228,226],tWarn:[254,243,214],tGray:[241,244,249],amber:[224,161,0]};
+function pFill_(doc,c){ doc.setFillColor(c[0],c[1],c[2]); }
+function pText_(doc,c){ doc.setTextColor(c[0],c[1],c[2]); }
+function pDraw_(doc,c){ doc.setDrawColor(c[0],c[1],c[2]); }
+function pT_(doc,str,x,y,o){ o=o||{}; doc.setFont('Sarabun',o.bold?'bold':'normal'); doc.setFontSize(o.size||9); pText_(doc,o.color||PC.ink);
+  doc.text(String(str),x,y,{align:o.align||'left',baseline:o.baseline||'alphabetic',maxWidth:o.maxWidth}); }
+function pCheck_(doc,x,y,s,c){ pDraw_(doc,c); doc.setLineWidth(s*0.18); doc.line(x,y,x+s*0.35,y+s*0.35); doc.line(x+s*0.35,y+s*0.35,x+s,y-s*0.45); }
+function pTri_(doc,x,y,s,up,c){ pFill_(doc,c); if(up) doc.triangle(x,y,x+s,y,x+s/2,y-s*0.9,'F'); else doc.triangle(x,y-s*0.9,x+s,y-s*0.9,x+s/2,y,'F'); }
+function pSec_(doc,x,y,w,title,sub){
+  pFill_(doc,PC.red); doc.roundedRect(x,y-3.6,1.4,4.6,0.6,0.6,'F');
+  pT_(doc,title,x+3.4,y,{bold:true,size:11,color:PC.navy});
+  if(sub){ doc.setFont('Sarabun','bold'); doc.setFontSize(11); const tw=doc.getTextWidth(title); pT_(doc,sub,x+3.4+tw+2,y,{size:8,color:PC.muted}); }
+  pDraw_(doc,PC.line); doc.setLineWidth(0.3); doc.line(x,y+2.2,x+w,y+2.2);
+}
+
+/* ctx เหมือน Excel: { session, d, rows, prev, history, withPhoto, imgMap, filterTxt } */
+async function cdBuildPdfDashboard_(ctx){
+  const {session:s, d, rows, prev, history, withPhoto, imgMap, filterTxt}=ctx;
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  registerThaiFont_(doc);
+  const M=12, W=210-2*M, T=d.total, cur=parseInt(s.Round,10)||1, done=s.Status==='done', left=d.missing+d.extra;
+
+  /* Banner */
+  pFill_(doc,PC.navy); doc.roundedRect(M,10,W,22,3,3,'F');
+  pFill_(doc,PC.red); doc.rect(M+6,29.6,24,0.9,'F');
+  pT_(doc,'รายงานการนับสต็อกทรัพย์สิน',M+6,21.5,{bold:true,size:17,color:PC.white});
+  pT_(doc,'CJ LOGISTICS · WFDC  ·  Asset Checker',M+6,27,{size:8.5,color:[190,205,228]});
+  const stCol= done ? (left===0?PC.ok:PC.amber) : PC.red;
+  const stTxt= done ? (left===0?'ปิดจบ · ไม่มี Diff ค้าง':'ปิดจบ · Diff ค้าง '+left) : (s.Status==='round_closed'?'ปิด '+roundName_(cur)+' · รอรอบถัดไป':'กำลังนับ '+roundName_(cur));
+  pFill_(doc,stCol); doc.roundedRect(M+W-62,16,56,10,5,5,'F');
+  if(done&&left===0) pCheck_(doc,M+W-57.5,21.3,3.2,PC.white);
+  pT_(doc,stTxt,M+W-34+(done&&left===0?2:0),22.6,{bold:true,size:9.5,color:PC.white,align:'center'});
+
+  /* Scope bar */
+  let y=36;
+  pFill_(doc,PC.tNavy); doc.roundedRect(M,y,W,9,2,2,'F');
+  pT_(doc,`${s.SessionID}   ·   โซน ${s.Zone||'ทั้งคลัง'}   ·   ประเภท ${s.Category||'ทุกประเภท'}   ·   ${done?'สิ้นสุดที่':'อยู่ที่'} ${roundName_(cur)}   ·   ผู้นับ ${s.CreatedBy}   ·   ${fmtDate(s.CreatedDate)}`,
+    M+4,y+5.9,{bold:true,size:8.3,color:PC.navy2,maxWidth:W-8});
+
+  /* Steps */
+  y=48; const sw=(W-9)/4;
+  ROUND_NAMES.forEach((nm,i)=>{ const n=i+1, x=M+i*(sw+3);
+    const ok= n<cur || (n===cur && s.Status!=='counting' && s.Status!=='recheck'), act=n===cur&&!ok, skip=!ok&&!act&&done;
+    pFill_(doc, ok?PC.tOk:act?PC.tRed:PC.tGray); doc.roundedRect(x,y,sw,8,4,4,'F');
+    const col= ok?PC.ok:act?PC.red:PC.muted;
+    if(ok) pCheck_(doc,x+sw/2-doc.getTextWidth(nm)/2-5.5,y+4.4,2.6,PC.ok);
+    if(act){ pFill_(doc,PC.red); doc.circle(x+sw/2-12,y+4,1.2,'F'); }
+    pT_(doc,nm+(skip?' · ข้าม':''),x+sw/2,y+5.4,{bold:true,size:8.5,color:col,align:'center'});
+    
+  });
+
+  /* KPI cards */
+  y=60; const kw=(W-9)/4;
+  const kp=[['ในขอบเขตรอบนี้',T,'รายการทั้งหมดที่ควรมี',PC.navy,PC.tNavy],['พบ',d.found,pc_(d.found,T)+'% ของทั้งหมด',PC.ok,PC.tOk],
+    ['ขาด',d.missing,pc_(d.missing,T)+'% ของทั้งหมด',PC.red,PC.tRed],['เกิน',d.extra,'นอกระบบ / นอกขอบเขต',PC.warn,PC.tWarn]];
+  kp.forEach(([l,v,sub,c,t],i)=>{ const x=M+i*(kw+3);
+    pFill_(doc,t); doc.roundedRect(x,y,kw,27,3,3,'F'); pFill_(doc,c); doc.roundedRect(x,y,kw,1.8,0.9,0.9,'F');
+    pFill_(doc,PC.white); doc.circle(x+kw-6,y+8,3.6,'F');
+    pFill_(doc,c); if(i===0) doc.rect(x+kw-7.6,y+6.4,3.2,3.2,'F');
+    if(i===1) pCheck_(doc,x+kw-7.7,y+8.2,3.2,c);
+    if(i===2){ pDraw_(doc,c); doc.setLineWidth(0.7); doc.line(x+kw-7.5,y+6.5,x+kw-4.5,y+9.5); doc.line(x+kw-4.5,y+6.5,x+kw-7.5,y+9.5); }
+    if(i===3){ pDraw_(doc,c); doc.setLineWidth(0.7); doc.line(x+kw-8,y+8,x+kw-4,y+8); doc.line(x+kw-6,y+6,x+kw-6,y+10); }
+    pT_(doc,l,x+4,y+8.6,{bold:true,size:8.5,color:c});
+    pT_(doc,String(v),x+4,y+20,{bold:true,size:24,color:c});
+    pT_(doc,sub,x+4,y+24.8,{size:7.5,color:PC.muted});
+  });
+
+  /* อัตราพบ + เทียบรอบก่อน */
+  y=94; const hw=(W-8)/2, xR=M+hw+8;
+  pSec_(doc,M,y,hw,'อัตราพบของ','Regular → สุดท้าย'); pSec_(doc,xR,y,hw,'เทียบรอบก่อน','ขอบเขตเดียวกัน');
+  y=99; const bw=(hw-12)/2;
+  pFill_(doc,PC.tNavy); doc.roundedRect(M,y,bw,20,3,3,'F');
+  pT_(doc,'ตอน Regular',M+bw/2,y+5.5,{size:7.5,color:PC.muted,align:'center'});
+  pT_(doc,d.regPct+'%',M+bw/2,y+15.5,{bold:true,size:19,color:PC.navy,align:'center'});
+  pDraw_(doc,PC.muted); doc.setLineWidth(0.6); const ax=M+bw+2.5; doc.line(ax,y+10,ax+6,y+10); doc.line(ax+4,y+8,ax+6,y+10); doc.line(ax+4,y+12,ax+6,y+10);
+  pFill_(doc,PC.tOk); doc.roundedRect(M+bw+12,y,bw,20,3,3,'F');
+  pT_(doc,'หลัง Count 1–3',M+bw+12+bw/2,y+5.5,{size:7.5,color:PC.muted,align:'center'});
+  pT_(doc,d.finalPct+'%',M+bw+12+bw/2,y+15.5,{bold:true,size:19,color:PC.ok,align:'center'});
+  const dl=+(d.finalPct-d.regPct).toFixed(1);
+  if(dl){ pFill_(doc,dl>0?PC.ok:PC.red); doc.roundedRect(M,y+23,30,6.4,3.2,3.2,'F'); pTri_(doc,M+3,y+27.6,2.6,dl>0,PC.white);
+    pT_(doc,(dl>0?'+':'')+dl+'%',M+18,y+27.6,{bold:true,size:8.5,color:PC.white,align:'center'}); }
+  pT_(doc,'ตามนับซ้ำ (Count 1–3) ช่วยให้เจอของเพิ่ม '+(d.found-d.regFound)+' ชิ้น',M+(dl?33:0),y+27.6,{size:7.8,color:PC.muted});
+  // compare
+  if(prev){
+    const cw=[hw*0.4,hw*0.18,hw*0.18,hw*0.24]; const cx=[xR,xR+cw[0],xR+cw[0]+cw[1],xR+cw[0]+cw[1]+cw[2]];
+    pFill_(doc,PC.navy2); doc.roundedRect(xR,y,hw,6.6,1.5,1.5,'F');
+    ['ตัวชี้วัด','รอบก่อน','รอบนี้','เปลี่ยน'].forEach((h,i)=>pT_(doc,h,i?cx[i]+cw[i]/2:cx[i]+3,y+4.5,{bold:true,size:8,color:PC.white,align:i?'center':'left'}));
+    const pl=prev.d.missing+prev.d.extra;
+    [['อัตราพบ (Regular)',prev.d.regPct,d.regPct,'%',false],['อัตราพบ (สุดท้าย)',prev.d.finalPct,d.finalPct,'%',false],['ขาด/เกิน ค้างท้ายรอบ',pl,left,' ชิ้น',true]]
+    .forEach(([n,pv,cv,u,gd],i)=>{ const ry=y+6.6+i*7; if(i%2===0){ pFill_(doc,PC.bg); doc.rect(xR,ry,hw,7,'F'); }
+      pT_(doc,n,cx[0]+3,ry+4.8,{size:8}); pT_(doc,pv+(u==='%'?'%':''),cx[1]+cw[1]/2,ry+4.8,{size:8,color:PC.muted,align:'center'});
+      pT_(doc,cv+(u==='%'?'%':''),cx[2]+cw[2]/2,ry+4.8,{bold:true,size:8,align:'center'});
+      const df=+(cv-pv).toFixed(1), good=df===0?null:(gd?df<0:df>0), col=good===null?PC.muted:(good?PC.ok:PC.red);
+      if(df===0) pT_(doc,'เท่าเดิม',cx[3]+cw[3]/2,ry+4.8,{size:8,color:col,align:'center'});
+      else { pTri_(doc,cx[3]+cw[3]/2-9,ry+5,2.2,df>0,col); pT_(doc,(df>0?'+':'')+df+u,cx[3]+cw[3]/2+1.5,ry+4.8,{bold:true,size:8,color:col,align:'center'}); } });
+    pT_(doc,'เทียบกับ '+prev.session.SessionID+' · '+fmtDate(prev.session.CreatedDate),xR,y+31,{size:7.2,color:PC.muted});
+  }else{
+    pFill_(doc,PC.bg); doc.roundedRect(xR,y,hw,27.6,3,3,'F');
+    pT_(doc,'ยังไม่มีรอบก่อนของขอบเขตนี้ให้เทียบ',xR+hw/2,y+15,{size:9,color:PC.muted,align:'center'});
+  }
+
+  /* พบของในรอบไหน + โดนัท */
+  y=136; pSec_(doc,M,y,hw,'พบของในรอบไหน'); pSec_(doc,xR,y,hw,'สัดส่วนผลการนับ');
+  y=141;
+  const rr=[['Regular Count',d.byRound[1],PC.navy,1],['Count 1',d.byRound[2],PC.c1,2],['Count 2',d.byRound[3],PC.c2,3],['Count 3',d.byRound[4],PC.c3,4],['ยังไม่เจอ (ขาด)',d.missing,PC.muted,0]];
+  rr.forEach(([n,v,c,rk],i)=>{ const ry=y+i*8.2, reached= rk===0||rk<=cur;
+    pFill_(doc,reached?c:[200,207,218]); doc.circle(M+2,ry+3,1.3,'F');
+    pT_(doc,n+(reached?'':(done?' (ข้าม)':' (ยังไม่ถึง)')),M+5,ry+4.2,{bold:reached,size:8.3,color:reached?PC.ink:PC.muted});
+    pT_(doc,String(v),M+40,ry+4.2,{bold:true,size:9,align:'right'});
+    pT_(doc,pc_(v,T)+'%',M+52,ry+4.2,{size:7.8,color:PC.muted,align:'right'});
+    const bx=M+55, bl=hw-55; pFill_(doc,PC.tGray); doc.roundedRect(bx,ry+1.4,bl,3.4,1.7,1.7,'F');
+    const fw=T?bl*v/T:0; if(fw>0){ pFill_(doc,reached?c:PC.muted); doc.roundedRect(bx,ry+1.4,Math.max(fw,3.4),3.4,1.7,1.7,'F'); } });
+  const dn=await xChartPng_({type:'doughnut',data:{labels:['Regular','Count 1','Count 2','Count 3','ขาด','เกิน'],
+      datasets:[{data:[d.byRound[1],d.byRound[2],d.byRound[3],d.byRound[4],d.missing,d.extra],backgroundColor:['#0d2a52','#2b5fb0','#7a4fc0','#e2231a','#e3e8f0','#f3c14b'],borderWidth:4,borderColor:'#fff'}]},
+    options:{cutout:'64%',layout:{padding:8},plugins:{legend:{position:'right',labels:{boxWidth:16,font:{size:17},padding:14,
+      generateLabels:ch=>ch.data.labels.map((l,i)=>({text:l+'   '+ch.data.datasets[0].data[i],fillStyle:ch.data.datasets[0].backgroundColor[i],strokeStyle:'#fff',index:i}))}}}},
+    plugins:[{id:'ctr',afterDraw(ch){ const c=ch.ctx, m=ch.getDatasetMeta(0).data[0]; if(!m) return; c.save(); c.textAlign='center';
+      c.fillStyle='#1c2b3f'; c.font='800 38px Sarabun, Tahoma'; c.fillText(d.finalPct+'%',m.x,m.y+8);
+      c.fillStyle='#6b7a90'; c.font='17px Sarabun, Tahoma'; c.fillText('พบ '+d.found+' / '+T,m.x,m.y+34); c.restore(); }}]},640,300);
+  doc.addImage(dn,'PNG',xR+4,y-1,hw-8,(hw-8)*300/640);
+
+  /* กราฟย้อนหลัง */
+  y=188; pSec_(doc,M,y,W,'อัตราพบย้อนหลัง','เฉพาะ '+(s.Zone||'ทั้งคลัง')+' · '+(s.Category||'ทุกประเภท'));
+  if(history.length){
+    const hp=await xChartPng_({type:'line',data:{labels:history.map(h=>h.label),datasets:[
+        {label:'อัตราพบตอน Regular',data:history.map(h=>h.reg),borderColor:'#b7c3d6',borderDash:[8,6],borderWidth:3,pointRadius:5,pointBackgroundColor:'#b7c3d6',tension:.35},
+        {label:'อัตราพบสุดท้าย (หลัง Count 1–3)',data:history.map(h=>h.fin),borderColor:'#2b5fb0',backgroundColor:'rgba(43,95,176,.12)',fill:true,borderWidth:4,pointRadius:7,pointBackgroundColor:'#fff',pointBorderWidth:3,tension:.35}]},
+      options:{layout:{padding:{top:26,right:34,left:14}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:15},stepSize:25},grid:{color:'#eef1f6'}},x:{ticks:{font:{size:15}},grid:{display:false}}},
+        plugins:{legend:{position:'bottom',labels:{font:{size:16},boxWidth:24}}}},
+      plugins:[{id:'lbl',afterDatasetsDraw(ch){ const c=ch.ctx, m=ch.getDatasetMeta(1); c.save(); c.font='700 16px Sarabun, Tahoma'; c.fillStyle='#1c2b3f'; c.textAlign='center';
+        m.data.forEach((p,i)=>c.fillText(history[i].fin+'%',p.x,p.y-15)); c.restore(); }}]},1300,236);
+    doc.addImage(hp,'PNG',M,y+4,W,W*236/1300);
+  }
+
+  /* รายการที่ต้องติดตาม */
+  y=y+4+(history.length?W*236/1300:0)+7;
+  const follow=d.rows.filter(a=>a._state==='ขาด').concat(d.extras);
+  pSec_(doc,M,y,W,'รายการที่ต้องติดตาม',follow.length+' รายการ (ขาด / เกิน)');
+  y+=4;
+  if(!follow.length){
+    pFill_(doc,PC.tOk); doc.roundedRect(M,y,W,10,2,2,'F'); pCheck_(doc,M+W/2-40,y+5.3,3,PC.ok);
+    pT_(doc,'ไม่มีรายการขาดหรือเกิน — ของตรงกับระบบทั้งหมด',M+W/2+2,y+6.6,{bold:true,size:9,color:PC.ok,align:'center'}); y+=14;
+  }else{
+    doc.autoTable({startY:y,margin:{left:M,right:M},head:[['WFDC','ชื่อทรัพย์สิน','หมวด','โซน','ผล','หมายเหตุ / ผลตรวจสอบ']],
+      body:follow.map(a=>[a.wfdcId,a.name||'',a.category||'-',a.zone||'-',a._state,'']),
+      styles:{font:'Sarabun',fontSize:8,cellPadding:1.8,lineColor:PC.line,lineWidth:0.1,textColor:PC.ink},
+      headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:PC.navy2,textColor:255},alternateRowStyles:{fillColor:PC.bg},
+      columnStyles:{0:{fontStyle:'bold',cellWidth:28},2:{cellWidth:32},3:{cellWidth:18,halign:'center'},4:{cellWidth:14,halign:'center',fontStyle:'bold'},5:{cellWidth:42}},
+      didParseCell:c=>{ if(c.section==='body'&&c.column.index===4){ const v=c.cell.raw; c.cell.styles.textColor=v==='ขาด'?PC.red:PC.warn; c.cell.styles.fillColor=v==='ขาด'?PC.tRed:PC.tWarn; } }});
+    y=doc.lastAutoTable.finalY+4;
+  }
+
+  /* ช่องเซ็น */
+  if(y>266){ doc.addPage(); y=20; }
+  const gw=(W-8)/3;
+  ['ผู้นับ','ผู้ตรวจสอบ','ผู้อนุมัติ'].forEach((n,i)=>{ const x=M+i*(gw+4);
+    pDraw_(doc,PC.line); doc.setLineWidth(0.3); doc.roundedRect(x,y,gw,14,2,2,'S');
+    pDraw_(doc,[180,190,205]); doc.setLineDashPattern([0.8,0.8],0); doc.line(x+6,y+8.5,x+gw-6,y+8.5); doc.setLineDashPattern([],0);
+    pT_(doc,n,x+gw/2,y+12.2,{bold:true,size:8.3,color:PC.navy,align:'center'});
+    pT_(doc,'วันที่ ......../......../........',x+gw/2,y+18,{size:7.5,color:PC.muted,align:'center'}); });
+
+  /* หน้าถัดไป: รายการทั้งหมด — รูปแบบตารางเดิม */
+  doc.addPage();
+  doc.setFont('Sarabun','bold'); doc.setFontSize(13); doc.setTextColor(0,0,0); doc.text('รายการทรัพย์สินที่นับ',14,16);
+  doc.setFont('Sarabun','normal'); doc.setFontSize(9);
+  doc.text('รอบนับ: '+s.SessionID+'    ขอบเขต: โซน '+(s.Zone||'ทั้งคลัง')+' · ประเภท '+(s.Category||'ทุกประเภท'),14,22);
+  doc.text(filterTxt+' · '+rows.length+' รายการ',14,27);
+  const head=['WFDC','Makro','ชื่อ','หมวด','โซน','ผล']; if(withPhoto) head.push('รูป');
+  doc.autoTable({
+    startY:31, head:[head],
+    body:rows.map(a=>{ const r=[a.wfdcId, a.makroTag||'-', a.name||'', a.category||'-', a.zone||'-', a._state]; if(withPhoto) r.push(''); return r; }),
+    styles:{font:'Sarabun',fontStyle:'normal',fontSize:7,cellPadding:1.5,minCellHeight:withPhoto?16:6,valign:'middle'},
+    headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]},
+    columnStyles: withPhoto?{6:{cellWidth:18}}:{},
+    margin:{bottom:14},
+    didParseCell:function(c){ if(c.section==='body'&&c.column.index===5){ const v=c.cell.raw;
+      if(v==='ขาด')c.cell.styles.textColor=[200,0,0]; else if(v==='เกิน')c.cell.styles.textColor=[200,140,0]; else c.cell.styles.textColor=[0,140,0]; } },
+    didDrawCell:function(c){ if(withPhoto&&c.section==='body'&&c.column.index===6){ const a=rows[c.row.index]; const img=a&&imgMap&&imgMap[a.assetId];
+      if(img){ try{ doc.addImage(img.data,img.fmt,c.cell.x+1,c.cell.y+1,14,14); }catch(e){} } } }
+  });
+
+  /* ฉบับร่าง + footer ทุกหน้า */
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){ doc.setPage(i);
+    if(!done){ doc.saveGraphicsState(); doc.setGState(new doc.GState({opacity:0.07})); pT_(doc,'ฉบับร่าง',105,170,{bold:true,size:90,color:PC.red,align:'center'}); doc.restoreGraphicsState(); }
+    pDraw_(doc,PC.line); doc.setLineWidth(0.2); doc.line(M,287,M+W,287);
+    pT_(doc,'Asset Checker · WFDC  ·  '+s.SessionID+'  ·  พิมพ์เมื่อ '+fmtDate(new Date().toISOString()),M,291,{size:7,color:PC.muted});
+    pT_(doc,'หน้า '+i+' / '+n,M+W,291,{size:7,color:PC.muted,align:'right'}); }
+  return doc;
+}
+
+// ข้อมูลสำหรับ Export — เฉพาะของในขอบเขต (โซน/ประเภท) ของรอบนับ + ของเกินที่สแกนเจอ + รอบก่อน + ย้อนหลัง
+async function cdBuildReportCtx_(sid, msg){
+  const session=cdSessions.find(s=>s.SessionID===sid)||cdCurrent;
   cdAssetsCache=null; // ดึงทะเบียนล่าสุดก่อนออกรายงาน
-  const d=await cdScope_(sess);
+  const d=await cdScope_(session);
   const rows=cdExportRows_(d);
   const withPhoto=document.getElementById('ovExPhoto').checked;
   const filterTxt= ovExFilter==='diff' ? 'เฉพาะรายการที่เคยเป็น Diff' : 'ทุกรายการในขอบเขต';
-  return { d, rows, session:sess, withPhoto, filterTxt };
-}
-function cdReportHeadLines_(d, session, filterTxt){
-  const t=d.total;
-  return [
-    'รอบนับ: '+session.SessionID+'    สิ้นสุด/อยู่ที่: '+roundName_(session.Round)+'    สถานะ: '+statusLabel_(session.Status,session.Round),
-    'ขอบเขต: โซน '+(session.Zone||'ทั้งคลัง')+' · ประเภท '+(session.Category||'ทุกประเภท')+'    ในขอบเขต '+t+' รายการ    ('+filterTxt+')',
-    'ผู้นับ: '+session.CreatedBy+'    วันที่: '+fmtDate(session.CreatedDate),
-    `พบ ${d.found} (${pc_(d.found,t)}%) · ขาด ${d.missing} (${pc_(d.missing,t)}%) · เกิน ${d.extra}    อัตราพบ Regular ${d.regPct}% → สุดท้าย ${d.finalPct}%`
-  ];
+  const pv=cdFindPrev_(session);
+  const prev= pv ? {session:pv, d:await cdScopeCached_(pv)} : null;
+  const same=cdSessions.filter(s=>cdSameScope_(s,session));
+  const idx=same.findIndex(s=>s.SessionID===session.SessionID);
+  const history=[];
+  for(const s of same.slice(idx, idx+5).reverse()){
+    try{ const r= s.SessionID===session.SessionID ? d : await cdScopeCached_(s);
+      history.push({label:s.SessionID.replace('COUNT-',''), reg:r.regPct, fin:r.finalPct}); }catch(e){}
+  }
+  const imgMap= withPhoto ? await cdLoadImages_(rows.filter(a=>a.assetId), msg) : {};
+  return { session, d, rows, prev, history, withPhoto, imgMap, filterTxt };
 }
 async function exportCountPDF(){
   const msg=document.getElementById('cdExMsg'); if(!cdCurrent) return; const sid=cdCurrent.SessionID;
   msg.textContent='กำลังสร้างรายงาน...';
   try{
-    const {d,rows,session,withPhoto,filterTxt}=await cdBuildReportData_(sid);
-    const imgMap= withPhoto ? await cdLoadImages_(rows.filter(a=>a.assetId), msg) : {};
+    const ctx=await cdBuildReportCtx_(sid, msg);
     msg.textContent='กำลังสร้าง PDF...';
-    const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    registerThaiFont_(doc);
-    const draft = session.Status!=='done';
-    doc.setFont('Sarabun','bold'); doc.setFontSize(15); doc.text('รายงานการนับสต็อกทรัพย์สิน',14,16);
-    doc.setFont('Sarabun','normal'); doc.setFontSize(9);
-    doc.text('CJ LOGISTICS · WFDC',14,22);
-    const L=cdReportHeadLines_(d,session,filterTxt);
-    let y=28; L.slice(0,3).forEach(t=>{ doc.text(t,14,y); y+=5; });
-    if(draft){ doc.setTextColor(200,0,0); doc.setFont('Sarabun','bold'); doc.text('*** ฉบับร่าง — ยังไม่ปิดจบรอบนับ ***',14,y); doc.setTextColor(0,0,0); doc.setFont('Sarabun','normal'); y+=5; }
-    doc.setFontSize(10); doc.setFont('Sarabun','bold'); doc.text(L[3],14,y+1); y+=4;
-    const head=['WFDC','Makro','ชื่อ','หมวด','โซน','เจอในรอบ','ผล']; if(withPhoto) head.push('รูป');
-    const body=rows.map(a=>{ const r=[a.wfdcId, a.makroTag||'-', a.name||'', a.category||'-', a.zone||'-', a._round?roundName_(a._round):'-', a._state]; if(withPhoto) r.push(''); return r; });
-    doc.autoTable({
-      startY:y+2, head:[head], body,
-      styles:{font:'Sarabun',fontStyle:'normal',fontSize:7,cellPadding:1.5,minCellHeight:withPhoto?16:6,valign:'middle'},
-      headStyles:{font:'Sarabun',fontStyle:'bold',fillColor:[13,42,82]},
-      columnStyles: withPhoto ? {7:{cellWidth:18}} : {},
-      didParseCell:function(c){ if(c.section==='body'&&c.column.index===6){ const v=c.cell.raw;
-        if(v==='ขาด')c.cell.styles.textColor=[200,0,0]; else if(v==='เกิน')c.cell.styles.textColor=[200,140,0]; else c.cell.styles.textColor=[0,140,0]; } },
-      didDrawCell:function(c){ if(withPhoto&&c.section==='body'&&c.column.index===7){ const a=rows[c.row.index]; const img=a&&imgMap[a.assetId];
-        if(img){ try{ doc.addImage(img.data,img.fmt,c.cell.x+1,c.cell.y+1,14,14); }catch(e){} } } }
-    });
-    let sy=doc.lastAutoTable.finalY+16; if(sy>270){doc.addPage();sy=20;}
-    doc.setFont('Sarabun','normal'); doc.setFontSize(9);
-    doc.text('ผู้นับ ............................',14,sy);
-    doc.text('ผู้ตรวจสอบ ............................',78,sy);
-    doc.text('ผู้อนุมัติ ............................',145,sy);
-    doc.save('CountReport_'+session.SessionID+'_'+today()+'.pdf');
-    msg.textContent='ดาวน์โหลด PDF แล้ว ('+rows.length+' แถว)';
+    const doc=await cdBuildPdfDashboard_(ctx);
+    doc.save('CountReport_'+ctx.session.SessionID+'_'+today()+'.pdf');
+    msg.textContent='ดาวน์โหลด PDF แล้ว ('+ctx.rows.length+' แถว)';
   }catch(e){ msg.textContent=''; toast(e.message,'err'); }
 }
 async function exportCountExcel(){
   const msg=document.getElementById('cdExMsg'); if(!cdCurrent) return; const sid=cdCurrent.SessionID;
   msg.textContent='กำลังสร้างรายงาน...';
   try{
-    const {d,rows,session,withPhoto,filterTxt}=await cdBuildReportData_(sid);
-    const imgMap= withPhoto ? await cdLoadImages_(rows.filter(a=>a.assetId), msg) : {};
+    const ctx=await cdBuildReportCtx_(sid, msg);
     msg.textContent='กำลังสร้าง Excel...';
-    const wb=new ExcelJS.Workbook(); const t=d.total;
-    const s1=wb.addWorksheet('สรุป');
-    s1.addRow(['รายงานการนับสต็อกทรัพย์สิน']); s1.getRow(1).font={bold:true,size:14};
-    s1.addRow(['รอบนับ',session.SessionID]); s1.addRow(['สิ้นสุด/อยู่ที่',roundName_(session.Round)]); s1.addRow(['สถานะ',statusLabel_(session.Status,session.Round)]);
-    s1.addRow(['โซน',session.Zone||'ทั้งคลัง']); s1.addRow(['ประเภท',session.Category||'ทุกประเภท']); s1.addRow(['รายการที่ Export',filterTxt]);
-    s1.addRow(['ผู้นับ',session.CreatedBy]); s1.addRow(['วันที่',fmtDate(session.CreatedDate)]);
-    if(session.Status!=='done') s1.addRow(['หมายเหตุ','*** ฉบับร่าง — ยังไม่ปิดจบรอบนับ ***']);
-    s1.addRow([]);
-    s1.addRow(['ในขอบเขต',t]); s1.addRow(['พบ',d.found,pc_(d.found,t)+'%']);
-    s1.addRow(['ขาด',d.missing,pc_(d.missing,t)+'%']); s1.addRow(['เกิน',d.extra]);
-    s1.addRow(['อัตราพบตอน Regular',d.regPct+'%']); s1.addRow(['อัตราพบสุดท้าย',d.finalPct+'%']);
-    s1.addRow([]); s1.addRow(['เจอในรอบ','จำนวน']);
-    for(let r=1;r<=4;r++) s1.addRow([roundName_(r), d.byRound[r]]);
-    s1.getColumn(1).width=22; s1.getColumn(2).width=28;
-    const s2=wb.addWorksheet('รายการ');
-    const cols=[{header:'WFDC',width:16},{header:'Makro',width:14},{header:'ชื่อ',width:28},{header:'หมวด',width:16},{header:'โซน',width:14},{header:'เจอในรอบ',width:14},{header:'ผล',width:10}];
-    if(withPhoto) cols.push({header:'รูป',width:16});
-    s2.columns=cols;
-    s2.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}}; s2.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0D2A52'}};
-    const color={'พบ':'FF1A9D5A','ขาด':'FFC80000','เกิน':'FFC88C00'};
-    let rowN=2;
-    for(const a of rows){
-      const row=s2.addRow([a.wfdcId,a.makroTag||'-',a.name||'',a.category||'-',a.zone||'-',a._round?roundName_(a._round):'-',a._state]);
-      row.getCell(7).font={bold:true,color:{argb:color[a._state]||'FF000000'}};
-      if(withPhoto){ row.height=42; const img=imgMap[a.assetId];
-        if(img){ try{ const id=wb.addImage({base64:img.data, extension:(img.fmt==='PNG'?'png':'jpeg')});
-          s2.addImage(id,{tl:{col:7,row:rowN-1},ext:{width:52,height:52}}); }catch(e){} } }
-      rowN++;
-    }
+    const wb=await cdBuildExcelDashboard_(ctx);
     const buf=await wb.xlsx.writeBuffer();
-    dl(new Blob([buf]),'CountReport_'+session.SessionID+'_'+today()+'.xlsx');
-    msg.textContent='ดาวน์โหลด Excel แล้ว ('+rows.length+' แถว)';
+    dl(new Blob([buf]),'CountReport_'+ctx.session.SessionID+'_'+today()+'.xlsx');
+    msg.textContent='ดาวน์โหลด Excel แล้ว ('+ctx.rows.length+' แถว)';
   }catch(e){ msg.textContent=''; toast(e.message,'err'); }
 }
 
